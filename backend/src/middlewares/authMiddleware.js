@@ -2,12 +2,12 @@ const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv').config();
 
 module.exports = (req, res, next) => {
-    const token = req.header('auth-token');
+    const token = req.header('token');
     if (!token) return res.status(401).send('Access Denied: No Auth token');
     
     try {
         const verified = jwt.verify(token, process.env.JWT_SECRET);
-        req.user = verified;
+        req.user = verified; // verified is the token paylad
         next();
     } catch (error) {
         res.status(400).send('Invalid Token: Not authorized');

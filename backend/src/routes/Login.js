@@ -1,35 +1,76 @@
-const auth = require('../controllers/authController');
 const express = require('express');
+const jwt = require('jsonwebtoken');
 const dotenv = require('dotenv').config();
 const db = require('../config/db');
 const router = express.Router();
 
-router.post('/login', (req, res) => {
-    const { username, password } = req.body;
+// Function to generate JWT
+const generateToken = (user) => {
+    return jwt.sign(user, process.env.JWT_SECRET, { expiresIn: '24h' });
+};
+
+router.post('/', async (req, res) => {
+    const { username, password, role } = req.body;
     
-    if(username === 'admin' && password === dotenv.parsed.ADMIN_PASSWORD){
-        res.json({ token: auth({
-            id: 1,
-            email: 'admin',
-            role: 'admin'
-        }) });
+    if (!username || !password) {
+        return res.status(400).json({ message: "Username and password are required." });
     }
-    else{
-        // query the password from database, compare the password with the password in database
-        // If password is correct, generate token, else, return 401 Unauthorized
-        query = "SELECT * FROM users WHERE username = ? AND password = ?";
-        db.query(query, [username, password], (err, result) => {
-            if(err) throw err;
-            if(result.length > 0){
-                res.json({ token: auth({
-                    id: result[0].id,
-                    email: result[0].email,
-                    role: 'user'
-                }) });
+
+    try {
+        if(role === 'admin'){
+            if(username !== 'admin' || password !== process.env.ADMIN_PASSWORD){
+                return res.status(401).json({ message: "Invalid credentials." });
             }
-            else{
-                res.status(401).json({ message: 'Unauthorized' });
+        }
+        
+        if(role === 'employee'){
+            const query = `SELECT * FROM employees WHERE username = ?`;
+            const [rows] = await db.execute(query, [username]);
+            
+            if (rows.length === 0) {
+                return res.status(401).json({ message: "Invalid credentials." });
             }
+    
+            const user = rows[0];
+            
+            if (password !== user.password) {
+                return res.status(401).json({ message: "Invalid credentials." });
+            }
+            
+            const token = generateToken({
+                id: user.employee_id,
+                email: user.email,
+                role: 'employee'
+            });
+    
+            res.json({ token });
+        }
+
+        const query = `SELECT * FROM customers WHERE username = ?`;
+        const [rows] = await db.execute(query, [username]);
+        
+        if (rows.length === 0) {
+            return res.status(401).json({ message: "Invalid credentials." });
+        }
+
+        const user = rows[0];
+        
+        if (password !== user.password) {
+            return res.status(401).json({ message: "Invalid credentials." });
+        }
+        
+        const token = generateToken({
+            id: user.customer_id,
+            email: user.email,
+            role: 'customer'
         });
+
+        res.json({ token });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Internal server error." });
     }
-})
+});
+
+module.exports = router;

@@ -4,66 +4,42 @@ import { NavbarComp } from "../components/Navbar";
 export function Home() {
     const [vehicles, setVehicles] = useState([]);
     
-    const fetchVehicles = async () => {
+    const fetchVehicleData = async () => {
         try {
             const response = await fetch("http://localhost:5050/vehicles");
-            const data = await response.json();
-            setVehicles(data);
-        } catch (error) {
-            console.error(error);
+            if (response.ok) {
+                const data = await response.json();
+                setVehicles(data);
+            } else {
+                console.error("Failed to fetch data");
+            }
+        } catch (err) {
+            console.error(err);
         }
     }
 
-    const handleClick = async (id) => {
-        try {
-            
-        } catch (error) {
-            console.error(error);
-        }
-    }
-
-    
     useEffect(() => {
-        fetchVehicles();
-    },
-    []);
+        fetchVehicleData();
+    }, []);
 
     return (
-        <div style={{ backgroundColor: "#181818", minHeight: "100vh", padding: "20px", color: "#e0e0e0" }}>
+        <>
             <NavbarComp />
-            <h1 style={{ textAlign: "center", marginTop: "80px" }}>Available Vehicles</h1>
-
-            <div
-                style={{
-                    display: "flex",
-                    justifyItems: "center",
-                    alignItems: "center",
-                    flexWrap: "wrap",
-                    justifyContent: "center",
-                    width: "100%", 
-                    padding: "20px",
-                    gap: "15px"
-                }}
-            >
-                {vehicles.map((vehicle) => (
-                    <div
-                        key={vehicle._id}
-                        style={{
-                            flexBasis: "300px",
-                            maxWidth: "400px", 
-                            backgroundColor: "#242424",
-                            padding: "20px",
-                            borderRadius: "8px",
-                            textAlign: "center",
-                            boxShadow: "0px 2px 5px rgba(0,0,0,0.2)"
-                        }} onclick={() => handleClick(vehicle._id)}
-                    >
-                        <strong style={{ color: "#f0f0f0", fontSize: "1.2rem" }}>
-                            {vehicle.type} {vehicle.brand} {vehicle.model}
-                        </strong>
-                    </div>
-                ))}
+            <div className="container mt-5 pt-5">
+                <h1 className="mb-4">Available Vehicles</h1>
+                <div className="list-group">
+                    {vehicles.map((vehicle) => (
+                        <div key={vehicle._id} className="list-group-item list-group-item-action">
+                            <div className="d-flex w-100 justify-content-between">
+                                <h5 className="mb-1">
+                                    {vehicle.brand} {vehicle.model}
+                                </h5>
+                                <small className="text-muted">{vehicle.type}</small>
+                            </div>
+                        </div>
+                    ))}
+                </div>
             </div>
-        </div>
+        </>
     );
 }
