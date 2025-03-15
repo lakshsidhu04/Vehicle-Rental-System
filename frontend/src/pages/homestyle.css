@@ -1,0 +1,13 @@
+:root {
+    --font-color: #eee;
+    --background-color: #333;
+    --link-color: lightblue;
+    --primary-color: #3498db;
+}
+
+[data-theme="light"] {
+    --font-color: #333;
+    --background-color: #eee;
+    --link-color: cornflowerblue;
+    --primary-color: #007bff;
+}

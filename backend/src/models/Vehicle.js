@@ -11,20 +11,17 @@ const vehicleModel = {
         const [rows] = await pool.execute(query, [id]);
         return rows[0];
     },
-    async createVehicle(id,type,brand,model,year,color,rides,rating,license_plate,price_per_day,status) {
-        const query = 'INSERT INTO vehicles (id,type,brand,model,year,color,rides,rating,license_plate,price_per_day,status) VALUES (?,?,?,?,?,?,?,?,?,?,?)';
-        const [rows] = await pool.execute(query, [id,type,brand,model,year,color,rides,rating,license_plate,price_per_day,status]);
-        return rows;
+    async createVehicle(type,brand,model,year,color,rides,rating,license_plate,price_per_day,status) {
+        const query = 'INSERT INTO vehicles (type,brand,model,year,color,rides,rating,license_plate,price_per_day,status) VALUES (?,?,?,?,?,?,?,?,?,?,?)';
+        await pool.execute(query, [type,brand,model,year,color,rides,rating,license_plate,price_per_day,status]);
     },
     async updateVehicle(id,type,brand,model,year,color,rides,rating,license_plate,price_per_day,status) {
         const query = 'UPDATE vehicles SET type = ?, brand = ?, model = ?, year = ?, color = ?, rides = ?, rating = ?, license_plate = ?, price_per_day = ?, status = ? WHERE id = ?';
-        const [rows] = await pool.execute(query, [type,brand,model,year,color,rides,rating,license_plate,price_per_day,status,id]);
-        return rows;
+        await pool.execute(query, [type,brand,model,year,color,rides,rating,license_plate,price_per_day,status,id]);
     },
     async deleteVehicle(id) {
         const query = 'DELETE FROM vehicles WHERE id = ?';
-        const [rows] = await pool.execute(query, [id]);
-        return rows;
+        await pool.execute(query, [id]);
     }
 };
 
