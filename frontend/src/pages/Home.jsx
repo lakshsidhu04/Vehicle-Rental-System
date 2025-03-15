@@ -6,7 +6,13 @@ export function Home() {
     
     const fetchVehicleData = async () => {
         try {
-            const response = await fetch("http://localhost:5050/vehicles");
+            const response = await fetch("http://localhost:5050/vehicles",{
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
             if (response.ok) {
                 const data = await response.json();
                 setVehicles(data);
@@ -18,6 +24,10 @@ export function Home() {
         }
     }
 
+    const handleBooking = (event) => {
+        
+    }
+    
     useEffect(() => {
         fetchVehicleData();
     }, []);
@@ -29,12 +39,11 @@ export function Home() {
                 <h1 className="mb-4">Available Vehicles</h1>
                 <div className="list-group">
                     {vehicles.map((vehicle) => (
-                        <div key={vehicle._id} className="list-group-item list-group-item-action">
+                        <div key={vehicle._id} className="list-group-item list-group-item-action" onClick={()=>handleBooking(vehicle._id)}>
                             <div className="d-flex w-100 justify-content-between">
                                 <h5 className="mb-1">
-                                    {vehicle.brand} {vehicle.model}
+                                    {vehicle.model} - {vehicle.license_plate}
                                 </h5>
-                                <small className="text-muted">{vehicle.type}</small>
                             </div>
                         </div>
                     ))}

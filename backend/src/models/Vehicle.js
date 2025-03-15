@@ -6,6 +6,11 @@ const vehicleModel = {
         const [rows] = await pool.execute(query);
         return rows;
     },
+    async getVehicleModels() {
+        const query = 'SELECT DISTINCT model FROM vehicles';
+        const [rows] = await pool.execute(query);
+        return rows;
+    },
     async getVehicleById(id) {
         const query = 'SELECT * FROM vehicles WHERE id = ?';
         const [rows] = await pool.execute(query, [id]);

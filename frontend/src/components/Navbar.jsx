@@ -1,20 +1,37 @@
-import React, { useEffect, useState } from "react";
+import React, { use, useEffect, useState } from "react";
 import { Navbar, Nav, Container, Button } from "react-bootstrap";
-import { Link } from "react-router-dom";
+import { Link ,useNavigate} from "react-router-dom";
+import {jwtDecode} from "jwt-decode";
+
+// Function to get user role from token
+const GetRole = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return "guest";
+
+    try {
+        const decoded = jwtDecode(token);
+        return decoded.role || "guest";
+    } catch (err) {
+        console.error("Invalid token:", err);
+        return "guest";
+    }
+};
 
 export function NavbarComp() {
-    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [role, setRole] = useState(GetRole());
+    const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+
+    const nav = useNavigate();
 
     useEffect(() => {
-        const token = localStorage.getItem("token");
-        setIsLoggedIn(!!token);
-        
         const handleStorageChange = () => {
-            setIsLoggedIn(!!localStorage.getItem("token"));
+            const token = localStorage.getItem("token");
+            setIsLoggedIn(!!token);
+            setRole(GetRole()); // Update role on token change
         };
 
         window.addEventListener("storage", handleStorageChange);
-        
+
         return () => {
             window.removeEventListener("storage", handleStorageChange);
         };
@@ -32,9 +49,28 @@ export function NavbarComp() {
                         <Nav.Link as={Link} to="/home" className="mx-1">
                             Home
                         </Nav.Link>
-                        {isLoggedIn && (
+
+                        {isLoggedIn && role === "customer" && (
                             <Nav.Link as={Link} to="/bookings" className="mx-1">
                                 My Bookings
+                            </Nav.Link>
+                        )}
+                        {isLoggedIn && role === "admin" && (
+                            <>
+                                <Nav.Link as={Link} to="/admin/earnings" className="mx-1">
+                                    Earnings
+                                </Nav.Link>
+                                <Nav.Link as={Link} to="/admin/all-bookings" className="mx-1">
+                                    All Bookings
+                                </Nav.Link>
+                                <Nav.Link as={Link} to="/admin/vehicles" className="mx-1">
+                                    Vehicles
+                                </Nav.Link>
+                            </>
+                        )}
+                        {isLoggedIn && role === "employee" && (
+                            <Nav.Link as={Link} to="/salary" className="mx-1">
+                                Salary
                             </Nav.Link>
                         )}
                     </Nav>
@@ -50,6 +86,8 @@ export function NavbarComp() {
                                 onClick={() => {
                                     localStorage.removeItem("token");
                                     setIsLoggedIn(false);
+                                    setRole("guest"); // Reset role on logout
+                                    nav("/");
                                 }}
                             >
                                 Logout
