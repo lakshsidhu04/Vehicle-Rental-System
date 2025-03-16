@@ -3,7 +3,7 @@ const db = require('../config/db');
 
 const router = express.Router();    
 
-router.post('/signup', (req, res) => {
+router.post('/signup', async (req, res) => {
     const { name, email, password, age, phoneNumber, address, licenseNumber } = req.body;
 
     if (!name || !email || !password || !licenseNumber) {

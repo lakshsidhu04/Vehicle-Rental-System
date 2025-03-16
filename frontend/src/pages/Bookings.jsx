@@ -41,7 +41,7 @@ export function Bookings() {
                                 <Card className="shadow-sm">
                                     <Card.Body>
                                         <h5 className="fw-bold">
-                                            {booking.model} - {booking.license_plate}
+                                            {booking.brand} {booking.model} - {booking.license_plate}
                                         </h5>
                                         <p className="mb-1 text-muted">
                                             {booking.color}, {booking.year}

@@ -4,23 +4,14 @@ const Vehicle = require('../models/Vehicle');
 const auth = require('../middlewares/authMiddleware');
 router.get('/', async(req, res) => {
     try {
-        const vehicles = await Vehicle.getVehicles();
+        const vehicles = await Vehicle.getVehiclesWithModelBrand();
         res.json(vehicles);
     } catch (error) {
         res.json({ message: error });
     }
 })
 
-router.get('/models', async(req, res) => {
-    try {
-        const models = await Vehicle.getVehicleModels();
-        res.json(models);
-    } catch (error) {
-        res.json({ message: error });
-    }
-})
-
-router.get('/:id', async(req, res) => {
+router.get('/get/:id', async(req, res) => {
     try {
         const vehicle = await Vehicle.getVehicleById(req.params.id);
         res.json(vehicle);
@@ -29,15 +20,48 @@ router.get('/:id', async(req, res) => {
     }
 })
 
+router.get('/admin', auth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(401).send('Access Denied: Only Admins can view all vehicles');
+    }
+
+    try {
+        const allVehicles = await Vehicle.getAllVehiclesForAdmin();
+        res.json(allVehicles);
+    } catch (error) {
+        console.error("Database error:", error);
+        res.status(500).json({ message: error.message });
+    
+    }
+});
+
+
+router.get('/admin/models', auth, async(req, res) => {
+    if(req.user.role !== 'admin'){
+        return res.status(401).send('Access Denied: Only Admins can view vehicle models');
+    }
+    try {
+        const models = await Vehicle.getModels();
+        res.json(models);
+    } catch (error) {
+        res.json({ message: error });
+    }
+}
+);
+
 router.post('/add' , auth, async(req, res) => {
     try{
         if(req.user.role !== 'admin'){
             return res.status(401).send('Access Denied: Only Admins can add vehicles');
         }
-        await Vehicle.createVehicle(req.body.vehicleType,req.body.vehicleBrand,req.body.vehicleModel,req.body.vehicleYear,req.body.vehicleColor,req.body.vehicleRides,req.body.vehicleRating,req.body.vehicleLicensePlate,req.body.vehiclePricePerDay,req.body.vehicleStatus);
+        console.log(req.body);
+        await Vehicle.addModel(req.body.vehicleBrand, req.body.vehicleModel, req.body.vehicleType);
+        await Vehicle.createVehicle(req.body.vehicleModel,req.body.vehicleYear,req.body.vehicleColor,req.body.vehicleRides,req.body.vehicleRating,req.body.vehicleLicensePlate,req.body.vehiclePricePerDay,req.body.vehicleStatus);
+
         res.json({ message: 'Vehicle added successfully' });
     }
     catch(error){
+        console.error("Database error:", error);
         res.json({ message: error });
     }
 })

@@ -7,7 +7,7 @@ const generateToken = require('../controllers/authController');
 
 router.post('/', async (req, res) => {
     const { username, password, role } = req.body;
-    
+    console.log(role);
     if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required." });
     }
