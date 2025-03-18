@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Vehicle = require('../models/Vehicle');
 const auth = require('../middlewares/authMiddleware');
+const db = require('../config/db');
 router.get('/', async(req, res) => {
     try {
         const vehicles = await Vehicle.getVehiclesWithModelBrand();
@@ -49,6 +50,19 @@ router.get('/admin/models', auth, async(req, res) => {
 }
 );
 
+router.get('/admin/maint', auth, async(req, res) => {
+    if(req.user.role !== 'admin'){
+        return res.status(401).send('Access Denied: Only Admins can view vehicle maintenance');
+    }
+    try {
+        const maintenance = await Vehicle.getMaintenance();
+        res.json(maintenance);
+    } catch (error) {
+        res.json({ message: error });
+    }
+}
+);
+
 router.post('/add' , auth, async(req, res) => {
     try{
         if(req.user.role !== 'admin'){
@@ -84,13 +98,60 @@ router.patch('/:id', auth, async(req, res) => {
         if(req.user.role !== 'admin'){
             return res.status(401).send('Access Denied: Only Admins can update vehicles');
         }
-        const updatedVehicle = await Vehicle.updateOne({ _id: req.params.id }, { $set: { vehicleName: req.body.vehicleName, vehicleType: req.body.vehicleType, vehicleModel: req.body.vehicleModel, vehicleNumber: req.body.vehicleNumber, vehicleColor: req.body.vehicleColor, vehiclePrice: req.body.vehiclePrice, vehicleImage: req.body.vehicleImage } });
+        const updatedVehicle = await Vehicle.updateVehicle();
         res.json(updatedVehicle);
     } catch (error) {
         res.json({ message: error });
     }
 }
-)
+);
+
+
+router.get('/available', async (req, res) => {
+    const { startDate, endDate } = req.query;
+
+    if (!startDate || !endDate) {
+        return res.status(400).json({ error: "Start and End dates are required" });
+    }
+
+    try {
+        const query = `
+            SELECT v.* FROM vehicles v
+            WHERE v.status = 'avail'
+            AND v.vehicle_id NOT IN (
+                SELECT b.vehicle_id FROM bookings b 
+                WHERE b.status IN ('pending', 'confirmed')
+                AND (
+                    (b.start_date <= ? AND b.end_date >= ?) 
+                    OR (b.start_date <= ? AND b.end_date >= ?)
+                    OR (b.start_date >= ? AND b.end_date <= ?)
+                )
+            );
+        `;
+
+        const [vehicles] = await db.query(query, [startDate, startDate, endDate, endDate, startDate, endDate]);
+        res.json(vehicles);
+    } catch (err) {
+        console.error("Error fetching available vehicles:", err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
+router.post('/rating', auth, async (req, res) => {
+    if(req.user.role !== 'customer'){
+        return res.status(401).send('Access Denied: Only Users can add ratings');
+    }
+    try {
+        const { vehicle_id, rating } = req.body;
+        console.log(vehicle_id, rating);
+        await Vehicle.addVehicleRating(vehicle_id, rating);
+        res.json({ message: "Rating added successfully" });
+    } catch (error) {
+        res.json({ message: error });
+    }
+}
+);
+
 
 module.exports = router;
 

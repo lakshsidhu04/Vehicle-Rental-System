@@ -7,7 +7,7 @@ router.get('/', auth, async (req, res) => {
     if (req.user.role !== 'customer') {
         return res.status(403).send('Forbidden');
     }
-
+    
     const customerId = req.user.id;
 
     try {
@@ -32,37 +32,148 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
+router.get('/count', auth, async (req, res) => {
+    if (req.user.role !== 'customer') {
+        return res.status(403).send('Forbidden');
+    }
+
+    const customerId = req.user.id;
+    
+    try {
+        const query = 'SELECT COUNT(*) AS total_bookings FROM bookings WHERE customer_id = ?;';
+        const [rows] = await db.execute(query, [customerId]);
+        res.json(rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Internal Server Error');
+    }
+}
+);
+
+
+router.post('/', async (req, res) => {
+    const { vehicle_id, start_date, end_date } = req.body;
+    const token = req.headers.authorization?.split(" ")[1];
+
+    if (!token) return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user_id = decoded.user_id;
+
+        const query = `INSERT INTO bookings (user_id, vehicle_id, start_date, end_date, status) VALUES (?, ?, ?, ?, 'pending')`;
+        await db.query(query, [user_id, vehicle_id, start_date, end_date]);
+
+        res.status(201).json({ message: "Booking request submitted!" });
+    } catch (err) {
+        console.error("Error creating booking:", err);
+        res.status(500).json({ error: "Internal Server Error" });
+    }
+});
+
 router.post('/add-booking', auth, async (req, res) => {
     if (req.user.role !== 'customer') {
         return res.status(403).send('Forbidden');
     }
-    
-    console.log(req.body);
-    
-    const customerId = req.user.id;
 
+    console.log(req.body);
+
+    const customerId = req.user.id;
     const { vehicleId, startDate, endDate } = req.body;
 
     if (!vehicleId || !startDate || !endDate) {
         return res.status(400).send('Bad Request');
     }
 
-    const query = `
-        INSERT INTO bookings ( customer_id,vehicle_id, start_date, end_date, status)
-        VALUES (?, ?, STR_TO_DATE(?, '%Y-%m-%d'), STR_TO_DATE(?, '%Y-%m-%d'), 'pending');
+    const checkQuery = `
+        SELECT * FROM bookings
+        WHERE vehicle_id = ? 
+        AND status IN ('pending', 'confirmed') 
+        AND (
+            (start_date <= STR_TO_DATE(?, '%Y-%m-%d') AND end_date >= STR_TO_DATE(?, '%Y-%m-%d')) 
+            OR (start_date <= STR_TO_DATE(?, '%Y-%m-%d') AND end_date >= STR_TO_DATE(?, '%Y-%m-%d'))
+            OR (start_date >= STR_TO_DATE(?, '%Y-%m-%d') AND end_date <= STR_TO_DATE(?, '%Y-%m-%d'))
+        );
     `;
     
     try {
-        await db.query(query, [ customerId,vehicleId, startDate, endDate]);
-        console.log("q1 done");
-        const query2 = `UPDATE vehicles SET status = 'booked' WHERE vehicle_id = ?;`;
-        await db.query(query2, [vehicleId]);
+        const [existingBookings] = await db.query(checkQuery, [vehicleId, startDate, startDate, endDate, endDate, startDate, endDate]);
+        
+        if (existingBookings.length > 0) {
+            return res.status(409).send('Vehicle is already booked for the selected period.');
+        }
+        
+        const insertQuery = `
+            INSERT INTO bookings (customer_id, vehicle_id, start_date, end_date, status)
+            VALUES (?, ?, STR_TO_DATE(?, '%Y-%m-%d'), STR_TO_DATE(?, '%Y-%m-%d'), 'pending');
+        `;
+        
+        await db.query(insertQuery, [customerId, vehicleId, startDate, endDate]);
+        console.log("Booking inserted");
+        
+        const updateQuery = `UPDATE vehicles SET status = 'booked' WHERE vehicle_id = ?;`;
+        await db.query(updateQuery, [vehicleId]);
+        
         res.status(201).send('Booking successful!');
     } catch (err) {
         console.error(err);
         res.status(500).send('Internal Server Error');
     }
-    
 });
+
+
+router.get('/admin', auth, async (req, res) => {
+    if (req.user.role !== 'admin') {
+        return res.status(403).send('Forbidden');
+    }
+    
+    try {
+        const query = `
+            SELECT 
+                b.booking_id, b.start_date, b.end_date, b.status, b.created_at,
+                v.vehicle_id, v.model, v.license_plate, v.price_per_day,
+                c.customer_id, c.name AS customer_name, c.email AS customer_email, c.phone_number,
+                m.brand, m.vehicle_type
+            FROM bookings b
+            JOIN vehicles v ON b.vehicle_id = v.vehicle_id
+            JOIN customers c ON b.customer_id = c.customer_id
+            JOIN vehicle_models m ON v.model = m.model;
+        `;
+        
+        const [rows] = await db.execute(query);
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Internal Server Error');
+    }
+}
+);
+
+
+router.get('/history', auth, async (req, res) => {
+    if(req.user.role !== 'customer') {
+        return res.status(403).send('Forbidden');
+    }
+    const customerId = req.user.id;
+    console.log(customerId);
+    const query = `
+        SELECT b.booking_id, v.vehicle_id, v.model AS vehicle_model, v.license_plate, 
+        b.start_date, b.end_date, b.status, v.rating
+        FROM bookings b
+        JOIN vehicles v ON b.vehicle_id = v.vehicle_id
+        WHERE b.customer_id = ? AND b.status = 'completed'
+        ORDER BY b.start_date DESC;
+    `;
+    
+    try {
+        const [rows] = await db.query(query, [customerId]);
+        console.log(rows);
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Internal Server Error");
+    }
+});
+
 
 module.exports = router;

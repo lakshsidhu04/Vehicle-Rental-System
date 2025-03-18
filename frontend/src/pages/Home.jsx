@@ -1,10 +1,70 @@
 import { useState, useEffect } from "react";
 import { NavbarComp } from "../components/Navbar";
+import { Footer } from "../components/Footer";
 import { jwtDecode } from "jwt-decode";
 import { useNavigate } from "react-router-dom";
-import { Modal, Button, Form } from "react-bootstrap";
+import { Modal, Button, Form, Container, Row, Col } from "react-bootstrap";
 import carImage from "../assets/car.jpg";
 import bikeImage from "../assets/bike.jpg";
+
+const styles = {
+    homeContainer: {
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh", 
+        width: "100vw",
+        maxWidth: "100%",
+        overflowX: "hidden",
+    },
+    contentWrapper: {
+        flex: "1 0 auto",
+        width: "100%",
+    },
+    headerSection: {
+        width: "100%",
+        padding: "2rem 0",
+        backgroundColor: "#f8f9fa",
+    },
+    searchForm: {
+        margin: "1rem 0 2rem",
+        padding: "1.5rem",
+        backgroundColor: "#fff",
+        borderRadius: "8px",
+        boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+    },
+    vehiclesContainer: {
+        width: "100%",
+        marginRight: 0,
+        marginLeft: 0,
+        paddingBottom: "2rem",
+    },
+    vehicleCard: {
+        transition: "transform 0.3s ease",
+    },
+    vehicleCardHover: {
+        transform: "translateY(-5px)",
+    },
+    searchBtn: {
+        backgroundColor: "#007bff",
+        borderColor: "#007bff",
+        fontWeight: 600,
+    },
+    bookBtn: {
+        backgroundColor: "#007bff",
+        borderColor: "#007bff",
+        fontWeight: 600,
+    },
+    containerFluid: {
+        width: "100%",
+        maxWidth: "100%",
+        paddingRight: 0,
+        paddingLeft: 0,
+    },
+    spinnerContainer: {
+        textAlign: "center",
+        padding: "2rem 0",
+    }
+};
 
 const GetRole = () => {
     const token = localStorage.getItem("token");
@@ -21,7 +81,7 @@ const GetRole = () => {
 
 export function Home() {
     const [vehicles, setVehicles] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(false);
     const [role, setRole] = useState(GetRole());
     const nav = useNavigate();
 
@@ -31,9 +91,40 @@ export function Home() {
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
 
-    const fetchVehicleData = async () => {
+    // Add global styles to ensure full width
+    useEffect(() => {
+        // Add a style tag to the document head
+        const styleTag = document.createElement('style');
+        styleTag.innerHTML = `
+            body {
+                margin: 0;
+                padding: 0;
+                overflow-x: hidden;
+            }
+            .container-fluid {
+                width: 100%;
+                max-width: 100%;
+                padding-right: 0;
+                padding-left: 0;
+            }
+        `;
+        document.head.appendChild(styleTag);
+
+        // Clean up
+        return () => {
+            document.head.removeChild(styleTag);
+        };
+    }, []);
+
+    const fetchAvailableVehicles = async () => {
+        if (!startDate || !endDate) {
+            alert("Please select start and end dates.");
+            return;
+        }
+
+        setLoading(true);
         try {
-            const response = await fetch("http://localhost:5050/vehicles", {
+            const response = await fetch(`http://localhost:5050/vehicles/available?startDate=${startDate}&endDate=${endDate}`, {
                 method: "GET",
                 headers: {
                     "Content-Type": "application/json",
@@ -44,7 +135,7 @@ export function Home() {
                 const data = await response.json();
                 setVehicles(data);
             } else {
-                console.error("Failed to fetch data");
+                console.error("Failed to fetch available vehicles");
             }
         } catch (err) {
             console.error(err);
@@ -52,143 +143,179 @@ export function Home() {
             setLoading(false);
         }
     };
-    
-    const handleBooking = (vehicle) => {
 
-        console.log("vehicle: ", vehicle);
+    const handleBooking = (vehicle) => {
         if (role === "customer") {
             setSelectedVehicle(vehicle);
             setShowModal(true);
         } else {
+            alert("You must be a customer to book a vehicle.");
             nav("/");
         }
     };
-    
-    const handleSubmitBooking = async () => {
-        if (!startDate || !endDate) {
-            alert("Please select start and end dates.");
+
+    const handleDateChange = (type, value) => {
+        const today = new Date().toISOString().split("T")[0];
+
+        if (type === "start") {
+            if (value < today) {
+                alert("Start date cannot be in the past.");
+                setStartDate("");
+            } else {
+                setStartDate(value);
+                if (endDate && value > endDate) {
+                    alert("Start date cannot be after the end date.");
+                    setEndDate("");
+                }
+            }
+        } else if (type === "end") {
+            if (value < today) {
+                alert("End date cannot be in the past.");
+                setEndDate("");
+            } else if (startDate && value < startDate) {
+                alert("End date cannot be before the start date.");
+                setEndDate("");
+            } else {
+                setEndDate(value);
+            }
+        }
+    };
+
+    const confirmBooking = async () => {
+        if (!selectedVehicle || !startDate || !endDate) {
+            alert("Invalid booking details.");
             return;
         }
 
-        console.log("Booking vehicle:", selectedVehicle.vehicle_id, startDate, endDate);
-
         try {
-            const response = await fetch("http://localhost:5050/bookings/add-booking", {
+            const response = await fetch("http://localhost:5050/bookings", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${localStorage.getItem("token")}`,
                 },
                 body: JSON.stringify({
-                    vehicleId: selectedVehicle.vehicle_id,
-                    startDate,
-                    endDate,
+                    vehicle_id: selectedVehicle.vehicle_id,
+                    start_date: startDate,
+                    end_date: endDate,
                 }),
             });
 
             if (response.ok) {
-                alert("Booking successful!");
+                alert("Booking confirmed!");
                 setShowModal(false);
-                setStartDate("");
-                setEndDate("");
+                setSelectedVehicle(null);
+                fetchAvailableVehicles(); // Refresh available vehicles
             } else {
-                const errorData = await response.json();
-                alert(`Booking failed: ${errorData.error}`);
+                alert("Failed to book vehicle.");
             }
         } catch (err) {
             console.error("Error booking vehicle:", err);
-            alert("Something went wrong. Try again later.");
         }
     };
 
     useEffect(() => {
-        fetchVehicleData();
-    }, []);
+        handleDateChange();
+    }, [startDate, endDate]);
 
     return (
-        <>
+        <div style={styles.homeContainer}>
             <NavbarComp />
-            <div className="container mt-5 pt-5">
-                <h1 className="mb-4 text-center">Available Vehicles</h1>
+            <div style={styles.contentWrapper}>
+                <div style={styles.containerFluid}>
+                    <div style={styles.headerSection}>
+                        <h1 className="mb-4 text-center">Find Available Vehicles</h1>
+                    </div>
 
-                {loading ? (
-                    <div className="text-center">
-                        <span className="spinner-border text-primary" role="status"></span>
-                        <p>Loading vehicles...</p>
-                    </div>
-                ) : (
-                    <div className="row">
-                        {vehicles.map((vehicle) => (
-                            <div key={vehicle._id} className="col-md-4 mb-4">
-                                <div className="card shadow-lg border-0 rounded-3">
-                                    <img
-                                        src={vehicle.vehicle_type === "Car" ? carImage : bikeImage}
-                                        alt={`${vehicle.brand} ${vehicle.model}`}
-                                        className="card-img-top"
-                                        style={{ height: "200px", objectFit: "cover" }}
-                                    />
-                                    <div className="card-body">
-                                        <h5 className="card-title">{vehicle.brand} {vehicle.model}</h5>
-                                        <p className="card-text">
-                                            <strong>License Plate:</strong> {vehicle.license_plate} <br />
-                                            <strong>Price per Day:</strong> ₹{vehicle.price_per_day}
-                                        </p>
-                                        <button
-                                            className="btn btn-primary w-100"
-                                            onClick={() => handleBooking(vehicle)}
-                                        >
-                                            Book Now
-                                        </button>
-                                    </div>
-                                </div>
+                    <Container>
+                        <Form className="mb-4" style={styles.searchForm}>
+                            <Row>
+                                <Col md={5}>
+                                    <Form.Group>
+                                        <Form.Label>Start Date</Form.Label>
+                                        <Form.Control type="date" value={startDate} onChange={(e) => handleDateChange("start", e.target.value)} />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={5}>
+                                    <Form.Group>
+                                        <Form.Label>End Date</Form.Label>
+                                        <Form.Control type="date" value={endDate} onChange={(e) => handleDateChange("end", e.target.value)} />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={2} className="d-flex align-items-end">
+                                    <Button className="w-100" style={styles.searchBtn} onClick={fetchAvailableVehicles}>Search</Button>
+                                </Col>
+                            </Row>
+                        </Form>
+                    </Container>
+
+                    <Container fluid style={{ paddingLeft: '15px', paddingRight: '15px' }}>
+                        {loading ? (
+                            <div style={styles.spinnerContainer}>
+                                <span className="spinner-border text-primary" role="status"></span>
+                                <p>Loading vehicles...</p>
                             </div>
-                        ))}
-                    </div>
-                )}
+                        ) : (
+                            <Row>
+                                {vehicles.map((vehicle) => (
+                                    <Col key={vehicle.vehicle_id} xs={12} sm={6} md={4} lg={3} className="mb-4">
+                                        <div
+                                            className="card shadow-lg border-0 rounded-3 h-100"
+                                            style={styles.vehicleCard}
+                                            onMouseOver={(e) => e.currentTarget.style.transform = "translateY(-5px)"}
+                                            onMouseOut={(e) => e.currentTarget.style.transform = "translateY(0)"}
+                                        >
+                                            <img
+                                                src={vehicle.vehicle_type === "Bike" ? bikeImage : carImage}
+                                                alt={`${vehicle.brand} ${vehicle.model}`}
+                                                className="card-img-top"
+                                                style={{ height: "200px", objectFit: "cover" }}
+                                            />
+                                            <div className="card-body d-flex flex-column">
+                                                <h5 className="card-title">{vehicle.brand} {vehicle.model}</h5>
+                                                <p className="card-text">
+                                                    <strong>License Plate:</strong> {vehicle.license_plate} <br />
+                                                    <strong>Price per Day:</strong> ₹{vehicle.price_per_day}
+                                                </p>
+                                                <button
+                                                    className="btn btn-primary w-100 mt-auto"
+                                                    style={styles.bookBtn}
+                                                    onClick={() => handleBooking(vehicle)}
+                                                >
+                                                    Book Now
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </Col>
+                                ))}
+                            </Row>
+                        )}
+                    </Container>
+                </div>
             </div>
+
+            <Footer />
 
             {/* Booking Modal */}
             <Modal show={showModal} onHide={() => setShowModal(false)} centered>
                 <Modal.Header closeButton>
-                    <Modal.Title>Book Vehicle</Modal.Title>
+                    <Modal.Title>Confirm Booking</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     {selectedVehicle && (
                         <>
-                            <h5>{selectedVehicle.brand} {selectedVehicle.model}</h5>
+                            <p><strong>Vehicle:</strong> {selectedVehicle.brand} {selectedVehicle.model}</p>
                             <p><strong>License Plate:</strong> {selectedVehicle.license_plate}</p>
                             <p><strong>Price per Day:</strong> ₹{selectedVehicle.price_per_day}</p>
-
-                            <Form>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>Start Date</Form.Label>
-                                    <Form.Control
-                                        type="date"
-                                        value={startDate}
-                                        onChange={(e) => setStartDate(e.target.value)}
-                                    />
-                                </Form.Group>
-                                <Form.Group className="mb-3">
-                                    <Form.Label>End Date</Form.Label>
-                                    <Form.Control
-                                        type="date"
-                                        value={endDate}
-                                        onChange={(e) => setEndDate(e.target.value)}
-                                    />
-                                </Form.Group>
-                            </Form>
+                            <p><strong>Booking Period:</strong> {startDate} to {endDate}</p>
                         </>
                     )}
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowModal(false)}>
-                        Cancel
-                    </Button>
-                    <Button variant="primary" onClick={handleSubmitBooking}>
-                        Confirm Booking
-                    </Button>
+                    <Button variant="secondary" onClick={() => setShowModal(false)}>Cancel</Button>
+                    <Button variant="primary" onClick={confirmBooking}>Confirm Booking</Button>
                 </Modal.Footer>
             </Modal>
-        </>
+        </div>
     );
 }

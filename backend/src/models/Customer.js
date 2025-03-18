@@ -7,7 +7,7 @@ const customerModel = {
         return rows;
     },
     async getCustomerById(id) {
-        const query = 'SELECT * FROM customers WHERE id = ?';
+        const query = 'SELECT * FROM customers WHERE customer_id = ?';
         const [rows] = await pool.execute(query, [id]);
         return rows[0];
     },

@@ -34,11 +34,15 @@ export function AdminLoginForm() {
         nav("/");
     }
 
+    const redirectCustomerLogin = async () => {
+        nav("/login/employee");
+    }
+
 
     return (
         <Container className="d-flex justify-content-center align-items-center" style={{ minHeight: "100vh" }}>
             <Card style={{ width: "350px", padding: "20px", borderRadius: "10px" }}>
-                <Card.Title className="text-center">Employee Login</Card.Title>
+                <Card.Title className="text-center">Admin Login</Card.Title>
                 <Form onSubmit={handleLogin}>
                     <Form.Group className="mb-3">
                         <Form.Label>Username</Form.Label>
@@ -68,6 +72,10 @@ export function AdminLoginForm() {
 
                     <Button variant="secondary" className="w-100 mt-2" onClick={redirectLogin} >
                         Login as Customer
+                    </Button>
+
+                    <Button variant="secondary" className="w-100 mt-2" onClick={redirectCustomerLogin} >
+                        Login as Employee
                     </Button>
                 </Form>
             </Card>

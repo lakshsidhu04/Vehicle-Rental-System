@@ -7,26 +7,52 @@ const generateToken = require('../controllers/authController');
 
 router.post('/', async (req, res) => {
     const { username, password, role } = req.body;
-    console.log(role);
+    console.log(req.body.username);
     if (!username || !password) {
         return res.status(400).json({ message: "Username and password are required." });
     }
-
+    
     try {
         if(role === 'admin'){
-            console.log(dotenv.parsed.ADMIN_PASSWORD);
-            console.log(password);
-            if (password !== dotenv.parsed.ADMIN_PASSWORD) {
-                return res.status(401).json({ message: "Invalid credentials." });
+            const query=`SELECT * FROM employees where username = ?`;
+            const [rows] = await db.execute(query, [username]);
+            var flag = 1;
+            if(rows.length === 0){
+                flag = 0;
+            }
+            
+            var user = {};
+
+            if(flag>0){
+                user = rows[0];
+                if (password !== user.password) {
+                    flag = 0;
+                }
             }
 
-            const token = generateToken({
-                id: 0,
-                username: 'admin',
-                role: 'admin'
-            });
             
-            res.json({ token });
+            
+            if(flag === 0){
+                if(username==='admin' && password===process.env.ADMIN_PASSWORD){
+                    const token = generateToken({
+                        id: 0,
+                        email: 'admin',
+                        role: 'admin'
+                    });
+                    res.json({ token });
+                }
+                else{
+                    return res.status(401).json({ message: "Invalid credentials." });
+                }
+            }
+            else{
+                const token = generateToken({
+                    id: user.employee_id,
+                    email: user.email,
+                    role: 'admin'
+                });
+                res.json({ token });
+            }
 
         }
         else if(role === 'employee'){

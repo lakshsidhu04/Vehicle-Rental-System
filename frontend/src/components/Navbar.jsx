@@ -17,9 +17,23 @@ const GetRole = () => {
     }
 };
 
+const GetId = () => {
+    const token = localStorage.getItem("token");
+    if (!token) return "";
+    
+    try {
+        const decoded = jwtDecode(token);
+        return decoded.id || "";
+    } catch (err) {
+        console.error("Invalid token:", err);
+        return "";
+    }
+}
+
 export function NavbarComp() {
     const [role, setRole] = useState(GetRole());
     const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem("token"));
+    const [id, setId] = useState(GetId());
 
     const nav = useNavigate();
 
@@ -51,9 +65,18 @@ export function NavbarComp() {
                         </Nav.Link>
 
                         {isLoggedIn && role === "customer" && (
-                            <Nav.Link as={Link} to="/bookings" className="mx-1">
-                                My Bookings
-                            </Nav.Link>
+                            <>
+                                <Nav.Link as={Link} to="/bookings" className="mx-1">
+                                    My Bookings
+                                </Nav.Link>
+                                <Nav.Link as={Link} to="/bookings/history" className="mx-1">
+                                    Booking History
+                                </Nav.Link>
+                                <Nav.Link as={Link} to={`/customer/${id}`} className="mx-1">
+                                    Profile
+                                </Nav.Link>
+                            </>
+                        
                         )}
                         {isLoggedIn && role === "admin" && (
                             <>
@@ -66,11 +89,17 @@ export function NavbarComp() {
                                 <Nav.Link as={Link} to="/admin/vehicles" className="mx-1">
                                     Vehicles
                                 </Nav.Link>
+                                <Nav.Link as={Link} to="/admin/employees" className="mx-1">
+                                    Employees
+                                </Nav.Link>
+                                <Nav.Link as={Link} to="/admin/maintenance" className="mx-1">
+                                    Maintenance
+                                </Nav.Link>
                             </>
                         )}
                         {isLoggedIn && role === "employee" && (
-                            <Nav.Link as={Link} to="/salary" className="mx-1">
-                                Salary
+                            <Nav.Link as={Link} to={`/employee/${id}`} className="mx-1">
+                                Profile
                             </Nav.Link>
                         )}
                     </Nav>

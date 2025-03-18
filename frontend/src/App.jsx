@@ -8,6 +8,13 @@ import { EmpLoginForm } from './pages/EmpLogin';
 import { AdminLoginForm } from './pages/AdminLogin';
 import { AdminVehicles } from './pages/Vehicles';
 import { Bookings } from './pages/Bookings';
+import AdminBookings from './pages/AdminBookings';
+import EmployeeProfile from './pages/EmployeeProfile';
+import AdminEmployees from './pages/AdminEmployees';
+import BookingHistory from './pages/BookingHistory';
+import CustomerProfile from './pages/CustomerProfile';
+import { MaintenanceVehicles } from './pages/AdminMaintenance';
+import AdminEarnings from './pages/Earnings';
 function App() {
   return (
     <Router>
@@ -19,6 +26,14 @@ function App() {
         <Route path="/login/admin" element={<AdminLoginForm />} />
         <Route path="/admin/vehicles" element={<AdminVehicles />} />
         <Route path="/bookings" element={<Bookings />} />
+        <Route path="/admin/all-bookings" element={<AdminBookings />} />
+        <Route path="/employee/:id" element={<EmployeeProfile />} />
+        <Route path="/admin/employees" element={<AdminEmployees />} />
+        <Route path="/admin/maintenance" element={<MaintenanceVehicles />} />
+        <Route path="/admin/earnings" element={<AdminEarnings/>} />
+        <Route path="/bookings/history" element={<BookingHistory />} />
+        <Route path="/customer/:id" element={<CustomerProfile />} />
+      
       </Routes>
     </Router>
   )

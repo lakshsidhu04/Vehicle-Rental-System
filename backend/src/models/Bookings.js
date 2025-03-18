@@ -7,22 +7,25 @@ const bookingsModel = {
     },
     
     async getBookingById(id) {
-        const [rows] = await pool.query('SELECT * FROM bookings WHERE id = ?', [id]);
+        const [rows] = await pool.query('SELECT * FROM bookings WHERE booking_id = ?', [id]);
         return rows;
     },
-    
+    async getBookingByCustomerId(customerId) {
+        const [rows] = await pool.query('SELECT * FROM bookings WHERE customer_id = ?', [customerId]);
+        return rows;
+    },
     async createBooking(booking) {
         const [result] = await pool.query('INSERT INTO bookings SET ?', booking);
         return result.insertId;
     },
     
     async updateBooking(id, booking) {
-        const [result] = await pool.query('UPDATE bookings SET ? WHERE id = ?', [booking, id]);
+        const [result] = await pool.query('UPDATE bookings SET ? WHERE booking_id = ?', [booking, id]);
         return result.affectedRows;
     },
     
     async deleteBooking(id) {
-        const [result] = await pool.query('DELETE FROM bookings WHERE id = ?', [id]);
+        const [result] = await pool.query('DELETE FROM bookings WHERE booking_id = ?', [id]);
         return result.affectedRows;
     },
 };

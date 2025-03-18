@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS vehicles (
     rides INT NOT NULL DEFAULT 0,
     rating DECIMAL(2,1) DEFAULT 0.0,
     license_plate VARCHAR(10) NOT NULL UNIQUE,
-    status ENUM('booked','avail','maintenance') NOT NULL DEFAULT 'avail',
+    status ENUM('avail','maintenance') NOT NULL DEFAULT 'avail',
     price_per_day DECIMAL(10,2) NOT NULL,
     FOREIGN KEY (model) REFERENCES vehicle_models(model)
 );
@@ -68,18 +68,6 @@ CREATE TABLE IF NOT EXISTS coupons (
     discount_percentage DECIMAL(5,2) NOT NULL CHECK (discount_percentage BETWEEN 0 AND 100),
     valid_from DATE NOT NULL,
     valid_until DATE NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS insurance (
-    insurance_id INT AUTO_INCREMENT PRIMARY KEY,
-    vehicle_id INT NOT NULL,
-    provider VARCHAR(50) NOT NULL,
-    policy_number VARCHAR(50) NOT NULL UNIQUE,
-    coverage_details TEXT NOT NULL,
-    start_date DATE NOT NULL,
-    end_date DATE NOT NULL,
-    status ENUM('active','expired','cancelled') NOT NULL DEFAULT 'active',
-    FOREIGN KEY (vehicle_id) REFERENCES vehicles(vehicle_id)
 );
 
 CREATE TABLE IF NOT EXISTS maintenance (
