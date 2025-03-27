@@ -19,10 +19,10 @@ router.post('/', auth,async (req, res) => {
     if(req.user.role !== 'admin'){
         return res.status(401).send('Access Denied: Only Admins can add vehicle maintenance');
     }
-    const { vehicle_id, cost, maintenance_date, description } = req.body.newMaintenance;
+    const { vehicle_id, cost, maintenance_date,employee_id, description } = req.body.newMaintenance;
     console.log(vehicle_id);
     try {
-        const maintenance_id = await Maintenance.addMaintenance(vehicle_id, cost, maintenance_date,description);
+        const maintenance_id = await Maintenance.addMaintenance(vehicle_id, cost,employee_id, maintenance_date,description);
         res.json({ maintenance_id });
     } catch (error) {
         res.json({ message: error });

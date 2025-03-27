@@ -6,11 +6,20 @@ const maintModel = {
         const [rows] = await pool.query(query);
         return rows;
     },
-    async addMaintenance(vehicle_id,cost,date, description) {
-        const query = `INSERT INTO maintenance (vehicle_id,description,cost, maintenance_date) VALUES (?,?,?,?)`;
-        const [result] = await pool.query(query, [vehicle_id,description, cost, date]);
-        return result.insertId;
-    },
+    async addMaintenance(vehicle_id, employee_id, description, cost, date) {
+        const query = `CALL add_maintenance(?, ?, ?, ?, ?)`;
+
+        const [result] = await pool.query(query, [
+            vehicle_id,
+            employee_id,  
+            description,
+            cost,
+            date
+        ]);
+
+        return result;
+    }
+
 };
     
 module.exports = maintModel;

@@ -22,7 +22,6 @@ CREATE TABLE vehicles (
     year INT NOT NULL,
     color VARCHAR(50),
     rides INT NOT NULL DEFAULT 0,
-    rated_rides INT NOT NULL DEFAULT 0,
     license_plate VARCHAR(10) NOT NULL UNIQUE,
     status ENUM('avail','maintenance') NOT NULL DEFAULT 'avail',
     price_per_day DECIMAL(10,2) NOT NULL,
@@ -74,10 +73,12 @@ CREATE TABLE coupons (
 CREATE TABLE maintenance (
     maintenance_id INT AUTO_INCREMENT PRIMARY KEY,
     vehicle_id INT NOT NULL,
+    employee_id INT NOT NULL,
     description TEXT NOT NULL,
     cost DECIMAL(10,2) NOT NULL,
     maintenance_date DATE NOT NULL,
-    FOREIGN KEY (vehicle_id) REFERENCES vehicles(vehicle_id)
+    FOREIGN KEY (vehicle_id) REFERENCES vehicles(vehicle_id),
+    FOREIGN KEY (employee_id) REFERENCES employees(employee_id)
 );
 
 CREATE TABLE transactions (

@@ -12,6 +12,7 @@ export function MaintenanceVehicles() {
         vehicle_id: "",
         description: "",
         cost: "",
+        employee_id: "",
         maintenance_date: "",
     });
     const [adding, setAdding] = useState(false);
@@ -64,7 +65,7 @@ export function MaintenanceVehicles() {
             if (!response.ok) throw new Error("Failed to add maintenance record.");
 
             setShowAddModal(false);
-            fetchMaintenanceVehicles(); // Refresh the list
+            fetchMaintenanceVehicles(); 
         } catch (err) {
             setAddError(err.message);
         } finally {
@@ -158,6 +159,17 @@ export function MaintenanceVehicles() {
                                 type="number"
                                 name="cost"
                                 value={newMaintenance.cost}
+                                onChange={handleChange}
+                                required
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Employee ID</Form.Label>
+                            <Form.Control
+                                type="number"
+                                name="employee_id"
+                                value={newMaintenance.employee_id}
                                 onChange={handleChange}
                                 required
                             />
