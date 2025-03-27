@@ -1,9 +1,12 @@
 import { useState, useEffect } from "react";
 import { NavbarComp } from "../components/Navbar";
-import { Card, Container, Row, Col, Badge } from "react-bootstrap";
+import { Card, Container, Row, Col, Badge, Button, Modal, Form } from "react-bootstrap";
 
 export function Bookings() {
     const [bookings, setBookings] = useState([]);
+    const [showModal, setShowModal] = useState(false);
+    const [selectedBooking, setSelectedBooking] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState("credit_card");
 
     const fetchBookingData = async () => {
         try {
@@ -28,6 +31,43 @@ export function Bookings() {
     useEffect(() => {
         fetchBookingData();
     }, []);
+
+    const handlePaymentClick = (booking) => {
+        setSelectedBooking(booking);
+        setShowModal(true);
+    };
+
+    const confirmPayment = async () => {
+        if (!selectedBooking) return;
+
+        try {
+            const amount = selectedBooking.price_per_day * (new Date(selectedBooking.end_date) - new Date(selectedBooking.start_date)) / (1000 * 60 * 60 * 24);
+
+            const response = await fetch(`http://localhost:5050/bookings/confirm`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify({
+                    booking_id: selectedBooking.booking_id,
+                    amount: amount,
+                    payment_method: paymentMethod,
+                }),
+            });
+            
+            if (response.ok) {
+                setBookings(bookings.map(b =>
+                    b.booking_id === selectedBooking.booking_id ? { ...b, status: "confirmed" } : b
+                ));
+                setShowModal(false);
+            } else {
+                console.error("Failed to confirm payment");
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     return (
         <>
@@ -66,6 +106,12 @@ export function Bookings() {
                                         >
                                             {booking.status.toUpperCase()}
                                         </Badge>
+
+                                        {booking.status === "pending" && (
+                                            <Button variant="primary" className="mt-3 w-100" onClick={() => handlePaymentClick(booking)}>
+                                                Make Payment
+                                            </Button>
+                                        )}
                                     </Card.Body>
                                 </Card>
                             </Col>
@@ -75,6 +121,34 @@ export function Bookings() {
                     )}
                 </Row>
             </Container>
+
+            <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Confirm Payment</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p>Are you sure you want to confirm the payment for this booking?</p>
+                    <Form>
+                        <Form.Group controlId="paymentMethod">
+                            <Form.Label>Select Payment Method</Form.Label>
+                            <Form.Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                                <option value="credit_card">Credit Card</option>
+                                <option value="debit_card">Debit Card</option>
+                                <option value="netbanking">Net Banking</option>
+                                <option value="upi">UPI</option>
+                            </Form.Select>
+                        </Form.Group>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowModal(false)}>
+                        Cancel
+                    </Button>
+                    <Button variant="success" onClick={confirmPayment}>
+                        Confirm Payment
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </>
     );
 }

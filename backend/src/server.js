@@ -7,6 +7,7 @@ const employeeRoutes = require('./routes/employee');
 const customerRoutes = require('./routes/customer');
 const maintRoutes = require('./routes/maintenance');
 const EarningRoutes = require('./routes/earnings');
+const signUpRoutes = require('./routes/signup');
 require('dotenv').config();
 require('./config/db');
 
@@ -22,5 +23,6 @@ app.use('/employees', employeeRoutes);
 app.use('/customers', customerRoutes);
 app.use('/maintenance', maintRoutes);
 app.use('/earnings', EarningRoutes);
+app.use('/signup', signUpRoutes);
 const PORT = 5050;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

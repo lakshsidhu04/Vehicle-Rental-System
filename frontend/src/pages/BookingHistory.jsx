@@ -48,7 +48,7 @@ export default function BookingHistory() {
             const token = localStorage.getItem("token");
             const ratingValue = rating[selectedBooking.booking_id];
 
-            const res = await fetch(`http://localhost:5050/vehicles/rating`, {
+            const res = await fetch(`http://localhost:5050/bookings/rating`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -57,15 +57,16 @@ export default function BookingHistory() {
                 body: JSON.stringify({
                     vehicle_id: selectedBooking.vehicle_id,
                     rating: ratingValue,
+                    booking_id: selectedBooking.booking_id,
                 }),
             });
 
             if (!res.ok) throw new Error("Failed to update rating");
-
+            
             setBookings((prev) =>
                 prev.map((b) =>
                     b.booking_id === selectedBooking.booking_id
-                        ? { ...b, rating: ratingValue }
+                        ? { ...b, rating: ratingValue, status: "rated" }
                         : b
                 )
             );
@@ -110,26 +111,15 @@ export default function BookingHistory() {
                                         <td>{booking.start_date}</td>
                                         <td>{booking.end_date}</td>
                                         <td>
-                                            <span className={`badge bg-${booking.status === 'completed' ? 'success' : 'secondary'}`}>
+                                            <span className={`badge bg-${booking.status === 'rated' ? 'info' : booking.status === 'completed' ? 'success' : 'secondary'}`}>
                                                 {booking.status}
                                             </span>
                                         </td>
+                                        <td>{booking.rating ? `${booking.rating} / 5` : "Not Rated"}</td>
                                         <td>
-                                            <span>
-                                                {[1, 2, 3, 4, 5].map((star) => (
-                                                    <FaStar
-                                                        key={star}
-                                                        size={20}
-                                                        className="mx-1"
-                                                        color={star <= (booking.rating || 0) ? "gold" : "black"}
-                                                    />
-                                                ))}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            {booking.status === "completed" && (
+                                            {booking.status !== "ongoing" && (
                                                 <Button variant="primary" size="sm" onClick={() => handleRateClick(booking)}>
-                                                    Rate Booking
+                                                    {booking.status === "rated" ? "Update Rating" : "Rate Booking"}
                                                 </Button>
                                             )}
                                         </td>
@@ -146,7 +136,7 @@ export default function BookingHistory() {
 
                 <Modal show={showModal} onHide={() => setShowModal(false)} centered>
                     <Modal.Header closeButton>
-                        <Modal.Title>Rate Booking</Modal.Title>
+                        <Modal.Title>{selectedBooking?.status === "rated" ? "Update Rating" : "Rate Booking"}</Modal.Title>
                     </Modal.Header>
                     <Modal.Body>
                         {selectedBooking && (

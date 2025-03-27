@@ -25,7 +25,7 @@ router.get('/admin', auth, async (req, res) => {
     if (req.user.role !== 'admin') {
         return res.status(401).send('Access Denied: Only Admins can view all vehicles');
     }
-
+    
     try {
         const allVehicles = await Vehicle.getAllVehiclesForAdmin();
         res.json(allVehicles);
@@ -116,7 +116,10 @@ router.get('/available', async (req, res) => {
 
     try {
         const query = `
-            SELECT v.* FROM vehicles v
+            SELECT v.*, 
+            COALESCE(AVG(b.rating), 0) AS rating
+            FROM vehicles v
+            LEFT JOIN bookings b ON v.vehicle_id = b.vehicle_id AND b.status = 'rated'
             WHERE v.status = 'avail'
             AND v.vehicle_id NOT IN (
                 SELECT b.vehicle_id FROM bookings b 
@@ -126,7 +129,8 @@ router.get('/available', async (req, res) => {
                     OR (b.start_date <= ? AND b.end_date >= ?)
                     OR (b.start_date >= ? AND b.end_date <= ?)
                 )
-            );
+            )
+            GROUP BY v.vehicle_id;
         `;
 
         const [vehicles] = await db.query(query, [startDate, startDate, endDate, endDate, startDate, endDate]);
@@ -137,20 +141,7 @@ router.get('/available', async (req, res) => {
     }
 });
 
-router.post('/rating', auth, async (req, res) => {
-    if(req.user.role !== 'customer'){
-        return res.status(401).send('Access Denied: Only Users can add ratings');
-    }
-    try {
-        const { vehicle_id, rating } = req.body;
-        console.log(vehicle_id, rating);
-        await Vehicle.addVehicleRating(vehicle_id, rating);
-        res.json({ message: "Rating added successfully" });
-    } catch (error) {
-        res.json({ message: error });
-    }
-}
-);
+
 
 
 module.exports = router;

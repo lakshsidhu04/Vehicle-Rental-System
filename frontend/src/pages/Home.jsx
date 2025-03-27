@@ -6,13 +6,14 @@ import { useNavigate } from "react-router-dom";
 import { Modal, Button, Form, Container, Row, Col } from "react-bootstrap";
 import carImage from "../assets/car.jpg";
 import bikeImage from "../assets/bike.jpg";
+import {AiFillStar, AiOutlineStar, AiTwotoneStar} from "react-icons/ai";
 
 const styles = {
     homeContainer: {
         display: "flex",
         flexDirection: "column",
-        minHeight: "100vh", 
-        width: "100vw",
+        minHeight: "100vh",
+        width: "100%",
         maxWidth: "100%",
         overflowX: "hidden",
     },
@@ -34,35 +35,11 @@ const styles = {
     },
     vehiclesContainer: {
         width: "100%",
-        marginRight: 0,
-        marginLeft: 0,
         paddingBottom: "2rem",
     },
-    vehicleCard: {
-        transition: "transform 0.3s ease",
-    },
-    vehicleCardHover: {
-        transform: "translateY(-5px)",
-    },
-    searchBtn: {
-        backgroundColor: "#007bff",
-        borderColor: "#007bff",
-        fontWeight: 600,
-    },
-    bookBtn: {
-        backgroundColor: "#007bff",
-        borderColor: "#007bff",
-        fontWeight: 600,
-    },
-    containerFluid: {
+    footer: {
         width: "100%",
-        maxWidth: "100%",
-        paddingRight: 0,
-        paddingLeft: 0,
-    },
-    spinnerContainer: {
-        textAlign: "center",
-        padding: "2rem 0",
+        flexShrink: 0,  // Ensures footer stays at the bottom
     }
 };
 
@@ -85,15 +62,13 @@ export function Home() {
     const [role, setRole] = useState(GetRole());
     const nav = useNavigate();
 
-    // Booking modal state
     const [showModal, setShowModal] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState(null);
     const [startDate, setStartDate] = useState("");
     const [endDate, setEndDate] = useState("");
+    const [showLoginModal, setShowLoginModal] = useState(false);
 
-    // Add global styles to ensure full width
     useEffect(() => {
-        // Add a style tag to the document head
         const styleTag = document.createElement('style');
         styleTag.innerHTML = `
             body {
@@ -110,7 +85,6 @@ export function Home() {
         `;
         document.head.appendChild(styleTag);
 
-        // Clean up
         return () => {
             document.head.removeChild(styleTag);
         };
@@ -133,6 +107,7 @@ export function Home() {
             });
             if (response.ok) {
                 const data = await response.json();
+                console.log(data);
                 setVehicles(data);
             } else {
                 console.error("Failed to fetch available vehicles");
@@ -149,9 +124,20 @@ export function Home() {
             setSelectedVehicle(vehicle);
             setShowModal(true);
         } else {
-            alert("You must be a customer to book a vehicle.");
-            nav("/");
+            setShowLoginModal(true);
         }
+    };
+    const handleLoginRedirect = () => {
+        setShowLoginModal(false);
+        nav("/login");
+    };
+
+    const renderStars = (rating) => {
+        const stars = [];
+        for (let i = 1; i <= 5; i++) {
+            stars.push(i <= rating ? <AiFillStar key={i} color="#ffd700" size={20} /> : <AiOutlineStar key={i} color="#ffd700" size={20} />);
+        }
+        return stars;
     };
 
     const handleDateChange = (type, value) => {
@@ -205,7 +191,7 @@ export function Home() {
                 alert("Booking confirmed!");
                 setShowModal(false);
                 setSelectedVehicle(null);
-                fetchAvailableVehicles(); // Refresh available vehicles
+                fetchAvailableVehicles();
             } else {
                 alert("Failed to book vehicle.");
             }
@@ -275,7 +261,9 @@ export function Home() {
                                                 <h5 className="card-title">{vehicle.brand} {vehicle.model}</h5>
                                                 <p className="card-text">
                                                     <strong>License Plate:</strong> {vehicle.license_plate} <br />
-                                                    <strong>Price per Day:</strong> ₹{vehicle.price_per_day}
+                                                    <strong>Price per Day:</strong> ₹{vehicle.price_per_day} <br />
+                                                    <strong>Total Price: ₹{vehicle.price_per_day * (1 + (new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24))}</strong> <br />
+                                                    <strong>Rating: </strong> {renderStars(vehicle.rating || 0)}
                                                 </p>
                                                 <button
                                                     className="btn btn-primary w-100 mt-auto"
@@ -296,7 +284,20 @@ export function Home() {
 
             <Footer />
 
-            {/* Booking Modal */}
+            <Modal show={showLoginModal} onHide={() => setShowLoginModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Login Required</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <p>You must be logged in as a customer to book a vehicle.</p>
+                    <p>Do you want to go to the login page?</p>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowLoginModal(false)}>Stay Here</Button>
+                    <Button variant="primary" onClick={handleLoginRedirect}>Go to Login</Button>
+                </Modal.Footer>
+            </Modal>
+
             <Modal show={showModal} onHide={() => setShowModal(false)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Confirm Booking</Modal.Title>

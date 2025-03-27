@@ -18,6 +18,12 @@ const bookingsModel = {
         const [result] = await pool.query('INSERT INTO bookings SET ?', booking);
         return result.insertId;
     },
+    async confirmBooking(customer_id,booking_id, amount, paymentMethod) {
+        const [result] = await pool.query('INSERT INTO transactions (customer_id,booking_id, amount, payment_method, transaction_type) VALUES (?, ?, ?, ?,?)', [customer_id, booking_id, amount, paymentMethod, 'booking_payment']);
+        // set booking status to confirmed
+        await pool.query('UPDATE bookings SET status = ? WHERE booking_id = ?', ['confirmed', booking_id]);
+        return result.insertId;
+    },
     
     async updateBooking(id, booking) {
         const [result] = await pool.query('UPDATE bookings SET ? WHERE booking_id = ?', [booking, id]);

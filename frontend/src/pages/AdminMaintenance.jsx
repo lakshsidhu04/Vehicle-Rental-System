@@ -16,7 +16,7 @@ export function MaintenanceVehicles() {
     });
     const [adding, setAdding] = useState(false);
     const [addError, setAddError] = useState(null);
-
+    
     const fetchMaintenanceVehicles = async () => {
         try {
             const response = await fetch("http://localhost:5050/maintenance", {

@@ -9,23 +9,21 @@ const employeeModel = {
         const [rows] = await pool.query('SELECT * FROM employees WHERE employee_id = ?', [id]);
         return rows[0];
     },
-    async createEmployee(employee_name, employee_username, employee_password,employee_email, employee_phone_number, employee_role, employee_salary,employee_hire_date) {
-        const query = `
-            INSERT INTO employees (name, username, password, email, phone_number, role, salary, hire_date) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `;
+    async createEmployee(employee_name, employee_username, employee_password, employee_email, employee_phone_number, employee_role, employee_salary, employee_hire_date) {
+    const query = `CALL add_employee(?, ?, ?, ?, ?, ?, ?, ?)`;
 
-        const [result] = await pool.query(query, [
-            employee_name, 
-            employee_username, 
-            employee_password, 
-            employee_email, 
-            employee_phone_number, 
-            employee_role, 
-            employee_salary, 
-            employee_hire_date
-        ]);
-        return result.insertId;
+    const [result] = await pool.query(query, [
+        employee_username, 
+        employee_password, 
+        employee_name, 
+        employee_email, 
+        employee_phone_number, 
+        employee_role, 
+        employee_salary, 
+        employee_hire_date
+    ]);
+    
+    return result;
     },
     async updateEmployee(id, employee) {
         const query = `

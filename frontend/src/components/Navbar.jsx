@@ -72,6 +72,10 @@ export function NavbarComp() {
                                 <Nav.Link as={Link} to="/bookings/history" className="mx-1">
                                     Booking History
                                 </Nav.Link>
+                                <Nav.Link as={Link} to="/fines" className="mx-1">
+                                    Fines
+                                </Nav.Link>
+
                                 <Nav.Link as={Link} to={`/customer/${id}`} className="mx-1">
                                     Profile
                                 </Nav.Link>

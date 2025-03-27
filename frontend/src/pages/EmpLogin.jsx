@@ -70,6 +70,12 @@ export function EmpLoginForm() {
                     <Button variant="secondary" className="w-100 mt-2" onClick={redirectLogin} >
                         Login as Customer
                     </Button>
+
+                    <Button variant="secondary" className="w-100 mt-2" onClick={()=>{ nav('/login/admin')}} >
+                        Login as Admin
+                    </Button>
+
+                    
                 </Form>
             </Card>
         </Container>

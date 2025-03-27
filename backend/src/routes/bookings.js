@@ -2,6 +2,7 @@ const express = require('express');
 const auth = require('../middlewares/authMiddleware');
 const router = express.Router();
 const db = require('../config/db');
+const bookingModel = require('../models/Bookings');
 
 router.get('/', auth, async (req, res) => {
     if (req.user.role !== 'customer') {
@@ -11,6 +12,8 @@ router.get('/', auth, async (req, res) => {
     const customerId = req.user.id;
 
     try {
+        const setStatusQuery = `UPDATE bookings SET status = 'completed' WHERE end_date < CURDATE() AND status = 'confirmed';`;
+        await db.query(setStatusQuery);
         const query = `
             SELECT 
                 b.booking_id, b.start_date, b.end_date, b.status, b.created_at,
@@ -21,7 +24,8 @@ router.get('/', auth, async (req, res) => {
             JOIN vehicles v ON b.vehicle_id = v.vehicle_id
             JOIN customers c ON b.customer_id = c.customer_id
             JOIN vehicle_models m ON v.model = m.model
-            WHERE b.customer_id = ?;
+            WHERE b.customer_id = ? AND b.status IN ('pending', 'confirmed')
+            ORDER BY b.start_date DESC;
         `;
 
         const [rows] = await db.execute(query, [customerId]);
@@ -50,18 +54,15 @@ router.get('/count', auth, async (req, res) => {
 }
 );
 
-
-router.post('/', async (req, res) => {
+router.post('/', auth, async (req, res) => {
+    if (req.user.role !== 'customer') {
+        return res.status(403).send('Forbidden');
+    }
+    const user_id = req.user.id;
     const { vehicle_id, start_date, end_date } = req.body;
-    const token = req.headers.authorization?.split(" ")[1];
-
-    if (!token) return res.status(401).json({ error: "Unauthorized" });
-
     try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user_id = decoded.user_id;
 
-        const query = `INSERT INTO bookings (user_id, vehicle_id, start_date, end_date, status) VALUES (?, ?, ?, ?, 'pending')`;
+        const query = `INSERT INTO bookings (customer_id, vehicle_id, start_date, end_date, status) VALUES (?, ?, ?, ?, 'pending')`;
         await db.query(query, [user_id, vehicle_id, start_date, end_date]);
 
         res.status(201).json({ message: "Booking request submitted!" });
@@ -121,6 +122,25 @@ router.post('/add-booking', auth, async (req, res) => {
     }
 });
 
+router.post('/confirm', auth, async (req, res) => {
+    if (req.user.role !== 'customer' && req.user.role !== 'admin') {
+        return res.status(403).send('Forbidden');
+    }
+    
+    const bookingId = req.body.booking_id;
+    const customerId = req.user.id;
+    const amount = req.body.amount;
+    const paymentMethod = req.body.payment_method;
+    
+    try {
+        const insertId = await bookingModel.confirmBooking(customerId, bookingId, amount, paymentMethod);
+        res.status(201).json({ message: 'Payment confirmed!', transaction_id: insertId });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Internal Server Error');
+    }
+}
+);
 
 router.get('/admin', auth, async (req, res) => {
     if (req.user.role !== 'admin') {
@@ -158,10 +178,10 @@ router.get('/history', auth, async (req, res) => {
     console.log(customerId);
     const query = `
         SELECT b.booking_id, v.vehicle_id, v.model AS vehicle_model, v.license_plate, 
-        b.start_date, b.end_date, b.status, v.rating
+        b.start_date, b.end_date, b.status, b.rating
         FROM bookings b
         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
-        WHERE b.customer_id = ? AND b.status = 'completed'
+        WHERE b.customer_id = ? AND b.status IN ('completed', 'rated')
         ORDER BY b.start_date DESC;
     `;
     
@@ -174,6 +194,31 @@ router.get('/history', auth, async (req, res) => {
         res.status(500).send("Internal Server Error");
     }
 });
+
+
+router.post('/rating', auth, async (req, res) => {
+    if (req.user.role !== 'customer') {
+        return res.status(403).send('Forbidden');
+    }
+    
+    const customerId = req.user.id;
+    const { vehicle_id, rating, booking_id} = req.body;
+    
+    try {
+        const query = `UPDATE bookings SET rating = ? , status = 'rated' WHERE booking_id = ? AND customer_id = ?;`;
+        const [result] = await db.query(query, [rating, booking_id, customerId]);
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).send('Booking not found');
+        }
+        
+        res.send('Rating updated successfully');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Internal Server Error');
+    }
+}
+);
 
 
 module.exports = router;

@@ -5,6 +5,7 @@ import { useNavigate, Link } from "react-router-dom";
 export function SignupForm() {
     const [formData, setFormData] = useState({
         name: "",
+        username: "",
         email: "",
         password: "",
         age: "",
@@ -29,22 +30,26 @@ export function SignupForm() {
             setError("Please fill in all required fields.");
             return;
         }
-
+        
         try {
-            const response = await fetch("http://localhost:5050/api/signup", {
+            const response = await fetch("http://localhost:5050/signup", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
                 },
                 body: JSON.stringify(formData),
             });
-
+            
             const data = await response.json();
+            console.log(data);
             if (response.ok) {
                 alert("Signup successful!");
                 navigate("/");
             } else {
-                setError(data.message || "Signup failed.");
+                setError(data.message
+                    ? data.message
+                    : "Error signing up. Please try again."
+                );
             }
         } catch (err) {
             setError("Error connecting to server.");
@@ -61,12 +66,15 @@ export function SignupForm() {
                         <Form.Label>Name</Form.Label>
                         <Form.Control type="text" name="name" placeholder="Enter full name" value={formData.name} onChange={handleChange} required />
                     </Form.Group>
-
+                    <Form.Group className="mb-3">
+                        <Form.Label>Username</Form.Label>
+                        <Form.Control type="text" name="username" placeholder="Enter Username" value={formData.username} onChange={handleChange} required />
+                    </Form.Group>
                     <Form.Group className="mb-3">
                         <Form.Label>Email</Form.Label>
                         <Form.Control type="email" name="email" placeholder="Enter email" value={formData.email} onChange={handleChange} required />
                     </Form.Group>
-
+                    
                     <Form.Group className="mb-3">
                         <Form.Label>Password</Form.Label>
                         <Form.Control type="password" name="password" placeholder="Enter password" value={formData.password} onChange={handleChange} required />
