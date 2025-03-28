@@ -4,20 +4,20 @@ import { NavbarComp } from "../components/Navbar";
 
 export function AdminVehicles() {
     const [vehicles, setVehicles] = useState([]);
-    const [models, setModels] = useState([]);
     const [showModal, setShowModal] = useState(false);
     const [showAddModal, setShowAddModal] = useState(false);
     const [selectedVehicle, setSelectedVehicle] = useState(null);
     const [error, setError] = useState(null);
 
+    // Added vehicle_id in initial form state.
     const initialFormState = {
+        vehicle_id: "",
         vehicleType: "",
         vehicleBrand: "",
         vehicleModel: "",
         vehicleYear: "",
         vehicleColor: "",
         vehicleRides: 0,
-        vehicleRating: 0.0,
         vehicleLicensePlate: "",
         vehicleStatus: "avail",
         vehiclePricePerDay: "",
@@ -27,7 +27,6 @@ export function AdminVehicles() {
 
     useEffect(() => {
         fetchVehicles();
-        fetchModels();
     }, []);
 
     const fetchVehicles = async () => {
@@ -46,22 +45,6 @@ export function AdminVehicles() {
         }
     };
 
-    const fetchModels = async () => {
-        try {
-            const res = await fetch("http://localhost:5050/vehicles/admin/models", {
-                headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-            });
-
-            if (!res.ok) throw new Error("Failed to fetch models");
-
-            const data = await res.json();
-            setModels(data);
-        } catch (error) {
-            console.error("Error fetching models:", error);
-            setError(error.message);
-        }
-    };
-
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
@@ -69,13 +52,13 @@ export function AdminVehicles() {
     const handleEdit = (vehicle) => {
         setSelectedVehicle(vehicle);
         setFormData({
+            vehicle_id: vehicle.vehicle_id, // store vehicle_id for backend reference
             vehicleType: vehicle.vehicle_type,
             vehicleBrand: vehicle.brand,
             vehicleModel: vehicle.model,
             vehicleYear: vehicle.year,
             vehicleColor: vehicle.color,
             vehicleRides: vehicle.rides,
-            vehicleRating: vehicle.rating,
             vehicleLicensePlate: vehicle.license_plate,
             vehicleStatus: vehicle.status,
             vehiclePricePerDay: vehicle.price_per_day,
@@ -130,6 +113,7 @@ export function AdminVehicles() {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${localStorage.getItem("token")}`,
                 },
+                // Note: vehicle_id is ignored when adding a new vehicle because it is auto-generated.
                 body: JSON.stringify(formData),
             });
 
@@ -166,7 +150,6 @@ export function AdminVehicles() {
                             <th>Year</th>
                             <th>Color</th>
                             <th>Rides</th>
-                            <th>Rating</th>
                             <th>License Plate</th>
                             <th>Status</th>
                             <th>Price/Day</th>
@@ -183,7 +166,6 @@ export function AdminVehicles() {
                                 <td>{vehicle.year}</td>
                                 <td>{vehicle.color}</td>
                                 <td>{vehicle.rides}</td>
-                                <td>{vehicle.rating}</td>
                                 <td>{vehicle.license_plate}</td>
                                 <td>{vehicle.status}</td>
                                 <td>${vehicle.price_per_day}</td>
@@ -203,16 +185,44 @@ export function AdminVehicles() {
                     </Modal.Header>
                     <Modal.Body>
                         <Form>
-                            <Form.Group>
-                                <Form.Label>Brand</Form.Label>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Type</Form.Label>
+                                <Form.Control type="text" name="vehicleType" value={formData.vehicleType} disabled />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Brand</Form.Label>
                                 <Form.Control type="text" name="vehicleBrand" value={formData.vehicleBrand} disabled />
                             </Form.Group>
-                            <Form.Group>
-                                <Form.Label>Model</Form.Label>
-                                <Form.Control as="select" name="vehicleModel" value={formData.vehicleModel} onChange={handleChange}>
-                                    {models.map((m) => (
-                                        <option key={m.model} value={m.model}>{m.model}</option>
-                                    ))}
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Model</Form.Label>
+                                <Form.Control type="text" name="vehicleModel" value={formData.vehicleModel} disabled />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Year</Form.Label>
+                                <Form.Control type="number" name="vehicleYear" value={formData.vehicleYear} disabled />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Color</Form.Label>
+                                <Form.Control type="text" name="vehicleColor" value={formData.vehicleColor} disabled />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Rides</Form.Label>
+                                <Form.Control type="number" name="vehicleRides" value={formData.vehicleRides} disabled />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle License Plate</Form.Label>
+                                <Form.Control type="text" name="vehicleLicensePlate" value={formData.vehicleLicensePlate} disabled />
+                            </Form.Group>
+                            {/* Editable Fields */}
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Price Per Day</Form.Label>
+                                <Form.Control type="number" name="vehiclePricePerDay" value={formData.vehiclePricePerDay} onChange={handleChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Status</Form.Label>
+                                <Form.Control as="select" name="vehicleStatus" value={formData.vehicleStatus} onChange={handleChange}>
+                                    <option value="avail">avail</option>
+                                    <option value="maintenance">maintenance</option>
                                 </Form.Control>
                             </Form.Group>
                         </Form>
@@ -230,12 +240,42 @@ export function AdminVehicles() {
                     </Modal.Header>
                     <Modal.Body>
                         <Form>
-                            {Object.keys(initialFormState).map((key) => (
-                                <Form.Group className="mb-3" key={key}>
-                                    <Form.Label>{key.replace("vehicle", "")}</Form.Label>
-                                    <Form.Control type="text" name={key} value={formData[key]} onChange={handleChange} />
-                                </Form.Group>
-                            ))}
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Type</Form.Label>
+                                <Form.Control type="text" name="vehicleType" value={formData.vehicleType} onChange={handleChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Brand</Form.Label>
+                                <Form.Control type="text" name="vehicleBrand" value={formData.vehicleBrand} onChange={handleChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Model</Form.Label>
+                                <Form.Control type="text" name="vehicleModel" value={formData.vehicleModel} onChange={handleChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Year</Form.Label>
+                                <Form.Control type="number" name="vehicleYear" value={formData.vehicleYear} onChange={handleChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Color</Form.Label>
+                                <Form.Control type="text" name="vehicleColor" value={formData.vehicleColor} onChange={handleChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Rides</Form.Label>
+                                <Form.Control type="number" name="vehicleRides" value={formData.vehicleRides} onChange={handleChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle License Plate</Form.Label>
+                                <Form.Control type="text" name="vehicleLicensePlate" value={formData.vehicleLicensePlate} onChange={handleChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Status</Form.Label>
+                                <Form.Control type="text" name="vehicleStatus" value={formData.vehicleStatus} onChange={handleChange} />
+                            </Form.Group>
+                            <Form.Group className="mb-3">
+                                <Form.Label>Vehicle Price Per Day</Form.Label>
+                                <Form.Control type="number" name="vehiclePricePerDay" value={formData.vehiclePricePerDay} onChange={handleChange} />
+                            </Form.Group>
                         </Form>
                     </Modal.Body>
                     <Modal.Footer>

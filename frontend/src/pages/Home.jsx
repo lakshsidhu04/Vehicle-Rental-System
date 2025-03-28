@@ -129,7 +129,7 @@ export function Home() {
     };
     const handleLoginRedirect = () => {
         setShowLoginModal(false);
-        nav("/login");
+        nav("/");
     };
 
     const renderStars = (rating) => {

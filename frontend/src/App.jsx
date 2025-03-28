@@ -16,6 +16,7 @@ import CustomerProfile from './pages/CustomerProfile';
 import { MaintenanceVehicles } from './pages/AdminMaintenance';
 import AdminEarnings from './pages/Earnings';
 import { Fines } from './pages/Fines';
+import EmployeeMaintenance from './pages/EmployeeJob';
 function App() {
   return (
     <Router>
@@ -35,6 +36,7 @@ function App() {
         <Route path="/bookings/history" element={<BookingHistory />} />
         <Route path="/customer/:id" element={<CustomerProfile />} />
         <Route path="/fines" element={<Fines />} />
+        <Route path="/employee/maintenance" element={<EmployeeMaintenance />} />
       
       </Routes>
     </Router>

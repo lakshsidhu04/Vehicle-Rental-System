@@ -70,8 +70,8 @@ router.post('/add' , auth, async(req, res) => {
         }
         console.log(req.body);
         await Vehicle.addModel(req.body.vehicleBrand, req.body.vehicleModel, req.body.vehicleType);
-        await Vehicle.createVehicle(req.body.vehicleModel,req.body.vehicleYear,req.body.vehicleColor,req.body.vehicleRides,req.body.vehicleRating,req.body.vehicleLicensePlate,req.body.vehiclePricePerDay,req.body.vehicleStatus);
-
+        await Vehicle.createVehicle(req.body.vehicleModel,req.body.vehicleYear,req.body.vehicleColor,req.body.vehicleRides,req.body.vehicleLicensePlate,req.body.vehiclePricePerDay,req.body.vehicleStatus);
+        
         res.json({ message: 'Vehicle added successfully' });
     }
     catch(error){
@@ -98,7 +98,10 @@ router.patch('/:id', auth, async(req, res) => {
         if(req.user.role !== 'admin'){
             return res.status(401).send('Access Denied: Only Admins can update vehicles');
         }
-        const updatedVehicle = await Vehicle.updateVehicle();
+        console.log(req.body);
+        const {vehicle_id, vehiclePricePerDay, vehicleStatus} = req.body;
+
+        const updatedVehicle = await Vehicle.updateVehicle(vehiclePricePerDay,vehicleStatus,vehicle_id);
         res.json(updatedVehicle);
     } catch (error) {
         res.json({ message: error });

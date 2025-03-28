@@ -29,6 +29,10 @@ const bookingsModel = {
         const [result] = await pool.query('UPDATE bookings SET ? WHERE booking_id = ?', [booking, id]);
         return result.affectedRows;
     },
+    async cancelBooking(id){
+        const [result] = await pool.query('UPDATE bookings SET status = ? WHERE booking_id = ?', ['cancelled', id]);
+        return result.affectedRows;
+    },
     
     async deleteBooking(id) {
         const [result] = await pool.query('DELETE FROM bookings WHERE booking_id = ?', [id]);

@@ -102,9 +102,14 @@ export function NavbarComp() {
                             </>
                         )}
                         {isLoggedIn && role === "employee" && (
-                            <Nav.Link as={Link} to={`/employee/${id}`} className="mx-1">
-                                Profile
-                            </Nav.Link>
+                            <>
+                                <Nav.Link as={Link} to={`/employee/${id}`} className="mx-1">
+                                    Profile
+                                </Nav.Link>
+                                <Nav.Link as={Link} to="/employee/maintenance" className="mx-1">
+                                    Maintenance Jobs
+                                </Nav.Link>
+                            </>
                         )}
                     </Nav>
                     <Nav>

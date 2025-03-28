@@ -62,7 +62,7 @@ export default function BookingHistory() {
             });
 
             if (!res.ok) throw new Error("Failed to update rating");
-            
+
             setBookings((prev) =>
                 prev.map((b) =>
                     b.booking_id === selectedBooking.booking_id
@@ -117,7 +117,7 @@ export default function BookingHistory() {
                                         </td>
                                         <td>{booking.rating ? `${booking.rating} / 5` : "Not Rated"}</td>
                                         <td>
-                                            {booking.status !== "ongoing" && (
+                                            {booking.status !== "ongoing" && booking.status !== "cancelled" && (
                                                 <Button variant="primary" size="sm" onClick={() => handleRateClick(booking)}>
                                                     {booking.status === "rated" ? "Update Rating" : "Rate Booking"}
                                                 </Button>

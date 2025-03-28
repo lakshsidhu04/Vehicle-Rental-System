@@ -181,7 +181,7 @@ router.get('/history', auth, async (req, res) => {
         b.start_date, b.end_date, b.status, b.rating
         FROM bookings b
         JOIN vehicles v ON b.vehicle_id = v.vehicle_id
-        WHERE b.customer_id = ? AND b.status IN ('completed', 'rated')
+        WHERE b.customer_id = ? AND b.status IN ('completed', 'rated','cancelled')
         ORDER BY b.start_date DESC;
     `;
     
@@ -213,6 +213,29 @@ router.post('/rating', auth, async (req, res) => {
         }
         
         res.send('Rating updated successfully');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Internal Server Error');
+    }
+}
+);
+
+router.post('/cancel', auth, async (req, res) => {
+    if (req.user.role !== 'customer') {
+        return res.status(403).send('Forbidden');
+    }
+    
+    const bookingId = req.body.booking_id;
+    const customerId = req.user.id;
+    
+    try {
+        
+        const affectedRows = await bookingModel.cancelBooking(bookingId);
+        if (affectedRows === 0) {
+            return res.status(404).send('Booking not found');
+        }
+        
+        res.send('Booking cancelled successfully');
     } catch (err) {
         console.error(err);
         res.status(500).send('Internal Server Error');

@@ -4,7 +4,8 @@ import { Card, Container, Row, Col, Badge, Button, Modal, Form } from "react-boo
 
 export function Bookings() {
     const [bookings, setBookings] = useState([]);
-    const [showModal, setShowModal] = useState(false);
+    const [showPaymentModal, setShowPaymentModal] = useState(false);
+    const [showBillModal, setShowBillModal] = useState(false);
     const [selectedBooking, setSelectedBooking] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState("credit_card");
 
@@ -34,14 +35,16 @@ export function Bookings() {
 
     const handlePaymentClick = (booking) => {
         setSelectedBooking(booking);
-        setShowModal(true);
+        setShowPaymentModal(true);
     };
 
     const confirmPayment = async () => {
         if (!selectedBooking) return;
 
         try {
-            const amount = selectedBooking.price_per_day * (new Date(selectedBooking.end_date) - new Date(selectedBooking.start_date)) / (1000 * 60 * 60 * 24);
+            // Calculate total amount based on days of booking
+            const days = (new Date(selectedBooking.end_date) - new Date(selectedBooking.start_date)) / (1000 * 60 * 60 * 24);
+            const amount = selectedBooking.price_per_day * days;
 
             const response = await fetch(`http://localhost:5050/bookings/confirm`, {
                 method: "POST",
@@ -55,18 +58,50 @@ export function Bookings() {
                     payment_method: paymentMethod,
                 }),
             });
-            
+
             if (response.ok) {
                 setBookings(bookings.map(b =>
-                    b.booking_id === selectedBooking.booking_id ? { ...b, status: "confirmed" } : b
+                    b.booking_id === selectedBooking.booking_id ? { ...b, status: "confirmed", total_amount: amount } : b
                 ));
-                setShowModal(false);
+                setShowPaymentModal(false);
+                // Show bill modal after successful payment confirmation
+                setShowBillModal(true);
             } else {
                 console.error("Failed to confirm payment");
             }
         } catch (err) {
             console.error(err);
         }
+    };
+
+    const handleCancelPayment = async (booking) => {
+        if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+        try {
+            const response = await fetch(`http://localhost:5050/bookings/cancel`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify({
+                    booking_id: booking.booking_id,
+                }),
+            });
+            if (response.ok) {
+                setBookings(bookings.map(b =>
+                    b.booking_id === booking.booking_id ? { ...b, status: "cancelled" } : b
+                ));
+            } else {
+                console.error("Failed to cancel booking");
+            }
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    // Function to handle printing the bill using window.print()
+    const handlePrintBill = () => {
+        window.print();
     };
 
     return (
@@ -108,9 +143,27 @@ export function Bookings() {
                                         </Badge>
 
                                         {booking.status === "pending" && (
-                                            <Button variant="primary" className="mt-3 w-100" onClick={() => handlePaymentClick(booking)}>
-                                                Make Payment
-                                            </Button>
+                                            <>
+                                                <Button variant="primary" className="mt-3 w-100" onClick={() => handlePaymentClick(booking)}>
+                                                    Make Payment
+                                                </Button>
+                                                <Button variant="danger" className="mt-2 w-100" onClick={() => handleCancelPayment(booking)}>
+                                                    Cancel Booking
+                                                </Button>
+                                            </>
+                                        )}
+                                        {booking.status === "confirmed" && (
+                                            <>
+                                                <Button variant="info" className="mt-3 w-100" onClick={() => {
+                                                    setSelectedBooking(booking);
+                                                    setShowBillModal(true);
+                                                }}>
+                                                    View Bill
+                                                </Button>
+                                                <Button variant="danger" className="mt-2 w-100" onClick={() => handleCancelPayment(booking)}>
+                                                    Cancel Booking
+                                                </Button>
+                                            </>
                                         )}
                                     </Card.Body>
                                 </Card>
@@ -122,7 +175,8 @@ export function Bookings() {
                 </Row>
             </Container>
 
-            <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+            {/* Payment Confirmation Modal */}
+            <Modal show={showPaymentModal} onHide={() => setShowPaymentModal(false)} centered>
                 <Modal.Header closeButton>
                     <Modal.Title>Confirm Payment</Modal.Title>
                 </Modal.Header>
@@ -141,11 +195,52 @@ export function Bookings() {
                     </Form>
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={() => setShowModal(false)}>
+                    <Button variant="secondary" onClick={() => setShowPaymentModal(false)}>
                         Cancel
                     </Button>
                     <Button variant="success" onClick={confirmPayment}>
                         Confirm Payment
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Bill Modal */}
+            <Modal show={showBillModal} onHide={() => setShowBillModal(false)} centered>
+                <Modal.Header closeButton>
+                    <Modal.Title>Booking Bill</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {selectedBooking ? (
+                        <div>
+                            <h5>
+                                {selectedBooking.brand} {selectedBooking.model}
+                            </h5>
+                            <p>
+                                <strong>License Plate:</strong> {selectedBooking.license_plate}
+                            </p>
+                            <p>
+                                <strong>Booking Dates:</strong> {new Date(selectedBooking.start_date).toLocaleDateString()} - {new Date(selectedBooking.end_date).toLocaleDateString()}
+                            </p>
+                            <p>
+                                <strong>Price per Day:</strong> ₹{selectedBooking.price_per_day}
+                            </p>
+                            <p>
+                                <strong>Total Amount:</strong> ₹{selectedBooking.price_per_day * ((new Date(selectedBooking.end_date) - new Date(selectedBooking.start_date)) / (1000 * 60 * 60 * 24)+1)}
+                            </p>
+                            <p>
+                                <strong>Pick-up Location:</strong> <a href="https://www.google.com/maps/@17.3799846,78.5514121,790m/data=!3m1!1e3?entry=ttu&g_ep=EgoyMDI1MDMyNS4xIKXMDSoASAFQAw%3D%3D" target="_blank" rel="noreferrer">View on Map</a>
+                            </p>
+                        </div>
+                    ) : (
+                        <p>No booking selected</p>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowBillModal(false)}>
+                        Close
+                    </Button>
+                    <Button variant="primary" onClick={handlePrintBill}>
+                        Print Bill
                     </Button>
                 </Modal.Footer>
             </Modal>

@@ -36,21 +36,21 @@ export default function AdminEmployees() {
     useEffect(() => {
         fetchAllEmployees();
     }, []);
-    
+
     const handleEdit = (employee) => {
         setSelectedEmployee(employee);
         setShowEditModal(true);
     };
-    
+
     const handleDeleteClick = (employee) => {
         setSelectedEmployee(employee);
         setShowDeleteModal(true);
     };
-    
+
     const handleChange = (e) => {
         setSelectedEmployee({ ...selectedEmployee, [e.target.name]: e.target.value });
     };
-    
+
     const handleUpdate = async (e) => {
         e.preventDefault();
         setUpdating(true);
@@ -80,7 +80,7 @@ export default function AdminEmployees() {
             setUpdating(false);
         }
     };
-    
+
     const handleDelete = async () => {
         setDeleting(true);
         try {
@@ -108,11 +108,11 @@ export default function AdminEmployees() {
         role: "staff",
         salary: "",
     });
-    
+
     const handleAddChange = (e) => {
         setNewEmployee({ ...newEmployee, [e.target.name]: e.target.value });
     };
-    
+
     const handleAddEmployee = async (e) => {
         e.preventDefault();
         setAdding(true);
@@ -130,7 +130,7 @@ export default function AdminEmployees() {
             });
 
             if (!res.ok) throw new Error("Failed to add employee");
-            
+
             fetchAllEmployees();
 
             setShowAddModal(false);
@@ -152,7 +152,7 @@ export default function AdminEmployees() {
         <>
             <NavbarComp />
 
-            <Container>
+            <Container style={{ marginTop: "20px" }}>
                 <Card>
                     <div className="d-flex justify-content-between">
                         <h2>Employee Management</h2>
@@ -188,7 +188,7 @@ export default function AdminEmployees() {
                                         <td>{emp.role}</td>
                                         <td>{emp.salary}</td>
                                         <td>
-                                            <Button variant="warning" onClick={() => handleEdit(emp)}>
+                                            <Button variant="warning" style={{ marginRight: "10px" }} onClick={() => handleEdit(emp)}>
                                                 <FaEdit /> Edit
                                             </Button>
                                             <Button variant="danger" onClick={() => handleDeleteClick(emp)}>
@@ -202,207 +202,208 @@ export default function AdminEmployees() {
                     )}
                 </Card>
             </Container>
-            
+
             <Modal show={showAddModal} onHide={() => setShowAddModal(false)} centered>
-    <Modal.Header closeButton>
-        <Modal.Title>Add New Employee</Modal.Title>
-    </Modal.Header>
-    <Modal.Body>
-        <Form onSubmit={handleAddEmployee}>
-            {/* Employee Name */}
-            <Form.Group className="mb-3">
-                <Form.Label>Full Name</Form.Label>
-                <Form.Control 
-                    type="text" 
-                    name="name" 
-                    value={newEmployee.name} 
-                    onChange={handleAddChange} 
-                    required 
-                    placeholder="Enter full name"
-                />
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-                <Form.Label>Username</Form.Label>
-                <Form.Control 
-                    type="text" 
-                    name="username" 
-                    value={newEmployee.username} 
-                    onChange={handleAddChange} 
-                    required 
-                    placeholder="Enter username"
-                />
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-                <Form.Label>Password</Form.Label>
-                <Form.Control 
-                    type="password" 
-                    name="password" 
-                    value={newEmployee.password} 
-                    onChange={handleAddChange} 
-                    required 
-                    placeholder="Enter password"
-                />
-            </Form.Group>
+                <Modal.Header closeButton style={{ padding: "10px", margin: "10px" }}>
+                    <Modal.Title>Add New Employee</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form onSubmit={handleAddEmployee}>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Full Name</Form.Label>
+                            <Form.Control
+                                type="text"
+                                name="name"
+                                value={newEmployee.name}
+                                onChange={handleAddChange}
+                                required
+                                placeholder="Enter full name"
+                            />
+                        </Form.Group>
 
-            <Form.Group className="mb-3">
-                <Form.Label>Email Address</Form.Label>
-                <Form.Control 
-                    type="email" 
-                    name="email" 
-                    value={newEmployee.email} 
-                    onChange={handleAddChange} 
-                    required 
-                    placeholder="Enter email"
-                />
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-                <Form.Label>Phone Number</Form.Label>
-                <Form.Control 
-                    type="text" 
-                    name="phone_number" 
-                    value={newEmployee.phone_number} 
-                    onChange={handleAddChange} 
-                    placeholder="Enter phone number"
-                />
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-                <Form.Label>Role</Form.Label>
-                <Form.Select 
-                    name="role" 
-                    value={newEmployee.role} 
-                    onChange={handleAddChange} 
-                    required
-                >
-                    <option value="staff">Staff</option>
-                    <option value="admin">Admin</option>
-                    <option value="mechanic">Mechanic</option>
-                </Form.Select>
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-                <Form.Label>Salary (₹)</Form.Label>
-                <Form.Control 
-                    type="number" 
-                    name="salary" 
-                    value={newEmployee.salary} 
-                    onChange={handleAddChange} 
-                    required 
-                    placeholder="Enter salary amount"
-                />
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-                <Form.Label>Hire Date</Form.Label>
-                <Form.Control 
-                    type="date" 
-                    name="hire_date" 
-                    value={newEmployee.hire_date} 
-                    onChange={handleAddChange} 
-                    required 
-                />
-            </Form.Group>
-            
-            <div className="d-flex justify-content-end">
-                <Button variant="secondary" className="me-2" onClick={() => setShowAddModal(false)}>
-                    Cancel
-                </Button>
-                <Button type="submit" variant="success" disabled={adding}>
-                    {adding ? "Adding..." : "Add Employee"}
-                </Button>
-            </div>
-        </Form>
-    </Modal.Body>
-</Modal>
-            
-            
+                        <Form.Group className="mb-3">
+                            <Form.Label>Username</Form.Label>
+                            <Form.Control
+                                type="text"
+                                name="username"
+                                value={newEmployee.username}
+                                onChange={handleAddChange}
+                                required
+                                placeholder="Enter username"
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Password</Form.Label>
+                            <Form.Control
+                                type="password"
+                                name="password"
+                                value={newEmployee.password}
+                                onChange={handleAddChange}
+                                required
+                                placeholder="Enter password"
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Email Address</Form.Label>
+                            <Form.Control
+                                type="email"
+                                name="email"
+                                value={newEmployee.email}
+                                onChange={handleAddChange}
+                                required
+                                placeholder="Enter email"
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Phone Number</Form.Label>
+                            <Form.Control
+                                type="text"
+                                name="phone_number"
+                                value={newEmployee.phone_number}
+                                onChange={handleAddChange}
+                                placeholder="Enter phone number"
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Role</Form.Label>
+                            <Form.Select
+                                name="role"
+                                value={newEmployee.role}
+                                onChange={handleAddChange}
+                                required
+                            >
+                                <option value="staff">Staff</option>
+                                <option value="admin">Admin</option>
+                                <option value="mechanic">Mechanic</option>
+                            </Form.Select>
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Hire Date</Form.Label>
+                            <Form.Control
+                                type="date"
+                                name="hire_date"
+                                value={newEmployee.hire_date}
+                                onChange={handleAddChange}
+                                required
+                            />
+                        </Form.Group>
+
+                        <Form.Group className="mb-3">
+                            <Form.Label>Salary (₹)</Form.Label>
+                            <Form.Control
+                                type="number"
+                                name="salary"
+                                value={newEmployee.salary}
+                                onChange={handleAddChange}
+                                required
+                                placeholder="Enter salary amount"
+                            />
+                        </Form.Group>
+
+
+
+                        <div className="d-flex justify-content-end" style={{ padding: "10px", margin: "10px" }}>
+                            <Button variant="secondary" className="me-2" onClick={() => setShowAddModal(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" variant="success" disabled={adding}>
+                                {adding ? "Adding..." : "Add Employee"}
+                            </Button>
+                        </div>
+                    </Form>
+                </Modal.Body>
+            </Modal>
+
+
             <Modal show={showEditModal} onHide={() => setShowEditModal(false)} centered>
-    <Modal.Header closeButton>
-        <Modal.Title>Edit Employee Details</Modal.Title>
-    </Modal.Header>
-    <Modal.Body>
-        <Form onSubmit={handleUpdate}>
-            <Form.Group className="mb-3">
-                <Form.Label>Full Name</Form.Label>
-                <Form.Control 
-                    type="text" 
-                    name="name" 
-                    value={selectedEmployee?.name || ""} 
-                    onChange={handleChange} 
-                    required 
-                    placeholder="Enter full name"
-                />
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-                <Form.Label>Email Address</Form.Label>
-                <Form.Control 
-                    type="email" 
-                    name="email" 
-                    value={selectedEmployee?.email || ""} 
-                    onChange={handleChange} 
-                    required 
-                    placeholder="Enter email"
-                />
-            </Form.Group>
-            
-            <Form.Group className="mb-3">
-                <Form.Label>Phone Number</Form.Label>
-                <Form.Control 
-                    type="text" 
-                    name="phone_number" 
-                    value={selectedEmployee?.phone_number || ""} 
-                    onChange={handleChange} 
-                    required 
-                    placeholder="Enter phone number"
-                />
-            </Form.Group>
+                <Modal.Header closeButton>
+                    <Modal.Title>Edit Employee Details</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form onSubmit={handleUpdate}>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Full Name</Form.Label>
+                            <Form.Control
+                                type="text"
+                                name="name"
+                                value={selectedEmployee?.name || ""}
+                                onChange={handleChange}
+                                required
+                                placeholder="Enter full name"
+                            />
+                        </Form.Group>
 
-            {/* Role Selection */}
-            <Form.Group className="mb-3">
-                <Form.Label>Role</Form.Label>
-                <Form.Select 
-                    name="role" 
-                    value={selectedEmployee?.role || ""} 
-                    onChange={handleChange} 
-                    required
-                >
-                    <option value="staff">Staff</option>
-                    <option value="admin">Admin</option>
-                    <option value="mechanic">Mechanic</option>
-                </Form.Select>
-            </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Email Address</Form.Label>
+                            <Form.Control
+                                type="email"
+                                name="email"
+                                value={selectedEmployee?.email || ""}
+                                onChange={handleChange}
+                                required
+                                placeholder="Enter email"
+                            />
+                        </Form.Group>
 
-            {/* Salary */}
-            <Form.Group className="mb-3">
-                <Form.Label>Salary (₹)</Form.Label>
-                <Form.Control 
-                    type="number" 
-                    name="salary" 
-                    value={selectedEmployee?.salary || ""} 
-                    onChange={handleChange} 
-                    required 
-                    placeholder="Enter salary amount"
-                />
-            </Form.Group>
+                        <Form.Group className="mb-3">
+                            <Form.Label>Phone Number</Form.Label>
+                            <Form.Control
+                                type="text"
+                                name="phone_number"
+                                value={selectedEmployee?.phone_number || ""}
+                                onChange={handleChange}
+                                required
+                                placeholder="Enter phone number"
+                            />
+                        </Form.Group>
 
-            {/* Action Buttons */}
-            <div className="d-flex justify-content-end">
-                <Button variant="secondary" className="me-2" onClick={() => setShowEditModal(false)}>
-                    Cancel
-                </Button>
-                <Button type="submit" variant="primary" disabled={updating}>
-                    {updating ? "Updating..." : "Update Employee"}
-                </Button>
-            </div>
-        </Form>
-    </Modal.Body>
-</Modal>
-            
-            
+                        {/* Role Selection */}
+                        <Form.Group className="mb-3">
+                            <Form.Label>Role</Form.Label>
+                            <Form.Select
+                                name="role"
+                                value={selectedEmployee?.role || ""}
+                                onChange={handleChange}
+                                required
+                            >
+                                <option value="staff">Staff</option>
+                                <option value="admin">Admin</option>
+                                <option value="mechanic">Mechanic</option>
+                            </Form.Select>
+                        </Form.Group>
+
+                        {/* Salary */}
+                        <Form.Group className="mb-3">
+                            <Form.Label>Salary (₹)</Form.Label>
+                            <Form.Control
+                                type="number"
+                                name="salary"
+                                value={selectedEmployee?.salary || ""}
+                                onChange={handleChange}
+                                required
+                                placeholder="Enter salary amount"
+                            />
+                        </Form.Group>
+
+                        {/* Action Buttons */}
+                        <div className="d-flex justify-content-end">
+                            <Button variant="secondary" className="me-2" onClick={() => setShowEditModal(false)}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" variant="primary" disabled={updating}>
+                                {updating ? "Updating..." : "Update Employee"}
+                            </Button>
+                        </div>
+                    </Form>
+                </Modal.Body>
+            </Modal>
+
+
             <Modal show={showDeleteModal} onHide={() => setShowDeleteModal(false)} centered>
                 <Modal.Header closeButton><Modal.Title>Confirm Delete</Modal.Title></Modal.Header>
                 <Modal.Body>Are you sure you want to delete {selectedEmployee?.name}?</Modal.Body>

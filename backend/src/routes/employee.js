@@ -80,7 +80,19 @@ router.delete('/:id', auth, async (req,res) =>{
     catch(error){
         res.status(500).json({message: error.message});
     }
-})
+});
+
+router.get('/emp/maintenance', auth, async (req, res) => {  
+    if(!req.user || req.user.role !== 'employee'){
+        return res.status(401).send('Access Denied: Only Employees can view maintenance jobs');
+    }
+    try {
+        const maintenances = await employeeModel.getEmployeeMaintenances(req.user.id);
+        res.json(maintenances);
+    } catch (error) {
+        res.json({ message: error });
+    }
+});
 
 
 module.exports = router;

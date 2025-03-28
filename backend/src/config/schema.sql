@@ -63,13 +63,6 @@ CREATE TABLE earnings (
     PRIMARY KEY (year, quarter)
 );
 
-CREATE TABLE coupons (
-    code VARCHAR(20) NOT NULL PRIMARY KEY,
-    discount_percentage DECIMAL(5,2) NOT NULL CHECK (discount_percentage BETWEEN 0 AND 100),
-    valid_from DATE NOT NULL,
-    valid_until DATE NOT NULL
-);
-
 CREATE TABLE maintenance (
     maintenance_id INT AUTO_INCREMENT PRIMARY KEY,
     vehicle_id INT NOT NULL,
@@ -282,6 +275,19 @@ BEGIN
 END$$
 DELIMITER ;
 
+-- make sure that employee alloted maintenance is not admin
+DELIMITER $$
+CREATE TRIGGER check_admin_maint
+BEFORE INSERT ON maintenance
+FOR EACH ROW
+BEGIN
+    IF (SELECT role FROM employees WHERE employee_id = NEW.employee_id) = 'admin' THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Admin cannot be alloted maintenance.';
+    END IF;
+END$$
+    
+
 
 DELIMITER $$
 CREATE TRIGGER validate_vehicle_price_before_update
@@ -307,91 +313,6 @@ BEGIN
     UPDATE vehicles
     SET status = p_status
     WHERE vehicle_id = p_vehicle_id;
-END$$
-DELIMITER ;
-
--- calculate discounted price
-DELIMITER $$
-CREATE PROCEDURE sp_create_booking_with_discount(
-    IN p_customer_id INT,
-    IN p_vehicle_id INT,
-    IN p_start_date DATE,
-    IN p_end_date DATE,
-    IN p_coupon_code VARCHAR(20)  -- Optional coupon code
-)
-BEGIN
-    DECLARE v_duration INT;
-    DECLARE v_price_per_day DECIMAL(10,2);
-    DECLARE v_total_cost DECIMAL(10,2);
-    DECLARE v_final_cost DECIMAL(10,2);
-    DECLARE v_booking_id INT;
-    DECLARE v_transaction_id INT;
-
-    -- Get vehicle price
-    SELECT price_per_day INTO v_price_per_day 
-    FROM vehicles WHERE vehicle_id = p_vehicle_id;
-
-    -- Calculate duration and cost
-    SET v_duration = DATEDIFF(p_end_date, p_start_date);
-    SET v_total_cost = v_duration * v_price_per_day;
-
-    -- Apply coupon discount if valid
-    IF p_coupon_code IS NOT NULL AND p_coupon_code <> '' THEN
-        SET v_final_cost = fn_calculate_discounted_price(v_total_cost, p_coupon_code);
-    ELSE
-        SET v_final_cost = v_total_cost;
-    END IF;
-
-    -- Create booking
-    INSERT INTO bookings(customer_id, vehicle_id, start_date, end_date, status)
-    VALUES(p_customer_id, p_vehicle_id, p_start_date, p_end_date, 'pending');
-    
-    -- Capture new booking ID
-    SET v_booking_id = LAST_INSERT_ID();
-
-    -- Create transaction
-    INSERT INTO transactions(customer_id, amount, payment_method, transaction_type)
-    VALUES(p_customer_id, v_final_cost, 'online', 'booking_payment');
-    
-    -- Capture transaction ID
-    SET v_transaction_id = LAST_INSERT_ID();
-
-    -- Link payment to booking
-    INSERT INTO booking_payment (transaction_id, booking_id)
-    VALUES (v_transaction_id, v_booking_id);
-END$$
-DELIMITER ;
-
-
--- functions
--- discounted
-DELIMITER $$
-CREATE FUNCTION fn_calculate_discounted_price(p_total_cost DECIMAL(10,2), p_coupon_code VARCHAR(20))
-RETURNS DECIMAL(10,2)
-DETERMINISTIC
-BEGIN
-    DECLARE v_discount DECIMAL(5,2);
-    DECLARE v_valid_from DATE;
-    DECLARE v_valid_until DATE;
-    DECLARE v_final_cost DECIMAL(10,2);
-    DECLARE v_current_date DATE;
-    
-    SET v_current_date = CURDATE();
-    
-    -- Retrieve coupon details (assumes coupon exists)
-    SELECT discount_percentage, valid_from, valid_until
-    INTO v_discount, v_valid_from, v_valid_until
-    FROM coupons
-    WHERE code = p_coupon_code
-    LIMIT 1;
-    
-    IF v_current_date BETWEEN v_valid_from AND v_valid_until THEN
-        SET v_final_cost = p_total_cost * (1 - v_discount/100);
-    ELSE
-        SET v_final_cost = p_total_cost;
-    END IF;
-    
-    RETURN v_final_cost;
 END$$
 DELIMITER ;
 
@@ -552,7 +473,82 @@ STARTS '2025-04-01 00:00:00'
 DO
 BEGIN
     CALL update_quarterly_earnings();
+END;
+//
+DELIMITER ;
+
+DELIMITER //
+CREATE EVENT IF NOT EXISTS event_update_salary_even_year
+ON SCHEDULE EVERY 1 YEAR
+STARTS '2025-01-01 00:00:00'
+DO
+BEGIN
     CALL update_salary_even_year();
 END;
 //
 DELIMITER ;
+
+DELIMITER //
+CREATE EVENT IF NOT EXISTS event_update_vehicle_status
+ON SCHEDULE EVERY 1 DAY
+STARTS '2025-01-01 00:00:00'
+DO
+BEGIN
+    UPDATE vehicles
+    SET status = 'avail'
+    WHERE status = 'maintenance'
+    AND vehicle_id NOT IN (
+        SELECT vehicle_id
+        FROM maintenance
+        WHERE maintenance_date = CURDATE()
+    );
+END;
+//
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE TRIGGER trg_process_refund
+BEFORE UPDATE ON bookings
+FOR EACH ROW
+BEGIN
+DECLARE original_amount DECIMAL(10,2);
+
+IF OLD.status <> 'cancelled' AND NEW.status = 'cancelled' THEN
+
+    SELECT amount INTO original_amount 
+    FROM transactions 
+    WHERE booking_id = NEW.booking_id 
+    AND transaction_type = 'booking_payment';
+    
+    IF original_amount IS NULL THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'No booking payment found for refund.';
+    END IF;
+
+    INSERT INTO transactions (customer_id, booking_id, amount, payment_method, transaction_type)
+    VALUES (NEW.customer_id, NEW.booking_id, original_amount * 0.5, 'online', 'refund');
+END IF;
+END$$
+
+DELIMITER ;
+
+
+CREATE INDEX idx_bookings_vehicle_dates ON bookings (start_date, end_date);
+
+CREATE INDEX idx_transactions_booking_id ON transactions (booking_id);
+
+CREATE INDEX idx_maintenance_vehicle_id ON maintenance (vehicle_id);
+
+CREATE INDEX idx_bookings_vehicle_id ON bookings (vehicle_id);
+
+CREATE INDEX idx_bookings_customer_id ON bookings (customer_id);
+
+CREATE INDEX idx_bookings_created_at ON bookings (created_at);
+
+CREATE INDEX idx_transactions_payment_status ON transactions (transaction_type);
+
+CREATE INDEX idx_vehicle_status ON vehicles (status);
+
+
+
