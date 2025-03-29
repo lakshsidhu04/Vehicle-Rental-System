@@ -35,6 +35,7 @@ CREATE TABLE bookings (
     start_date DATE NOT NULL,
     end_date DATE NOT NULL,
     rating DECIMAL(2,1) DEFAULT 0.0,
+    feedback VARCHAR(256) DEFAULT NULL,
     status ENUM('pending','confirmed','cancelled','completed','rated') NOT NULL DEFAULT 'pending',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
@@ -79,7 +80,7 @@ CREATE TABLE transactions (
     customer_id INT NOT NULL,
     booking_id INT NOT NULL,
     amount DECIMAL(10,2) NOT NULL,
-    payment_method VARCHAR(50) NOT NULL,
+    payment_method VARCHAR(50) NOT NULL
     transaction_type ENUM('booking_payment','fine','refund') NOT NULL,
     transaction_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
@@ -402,7 +403,6 @@ BEGIN
 END$$
 DELIMITER ;
 
-
 DELIMITER //
 
 CREATE PROCEDURE update_quarterly_earnings()
@@ -550,5 +550,89 @@ CREATE INDEX idx_transactions_payment_status ON transactions (transaction_type);
 
 CREATE INDEX idx_vehicle_status ON vehicles (status);
 
+-- Booking Payment Transaction
+DELIMITER $$
+CREATE PROCEDURE process_booking_payment (
+    IN e_customer_id INT,
+    IN e_booking_id INT,
+    IN e_amount DECIMAL(10,2),
+    IN e_payment_method VARCHAR(50)
+)
+BEGIN
+    -- Insert transaction record
+    INSERT INTO transactions (customer_id, booking_id, amount, payment_method, transaction_type)
+    VALUES (e_customer_id, e_booking_id, e_amount, e_payment_method, 'booking_payment');
+    
+    -- Update booking status to 'confirmed'
+    UPDATE bookings
+    SET status = 'confirmed'
+    WHERE booking_id = e_booking_id
+    AND status = 'pending';
+END$$
+DELIMITER ;
 
 
+-- Fine Payment Transaction
+DELIMITER $$
+CREATE PROCEDURE process_fine_payment (
+    IN e_customer_id INT,
+    IN e_booking_id INT,
+    IN e_amount DECIMAL(10,2),
+    IN e_payment_method VARCHAR(50),
+    IN e_maintenance_id INT
+)
+BEGIN
+    -- Insert transaction record
+    INSERT INTO transactions (customer_id, booking_id, amount, payment_method, transaction_type)
+    VALUES (e_customer_id, e_booking_id, e_amount, e_payment_method, 'fine');
+    
+    -- Link fine to maintenance
+    INSERT INTO fine (maintenance_id, booking_id)
+    VALUES (e_maintenance_id, e_booking_id);
+END$$
+DELIMITER ;
+
+
+-- Refund Transaction
+DELIMITER $$
+CREATE PROCEDURE process_refund (
+    IN e_customer_id INT,
+    IN e_booking_id INT,
+    IN e_amount DECIMAL(10,2),
+    IN e_payment_method VARCHAR(50)
+)
+BEGIN
+    -- Common Table Expression to fetch recent transactions for the customer
+    WITH recent_transactions AS (
+        SELECT transaction_id, customer_id, booking_id, amount, transaction_type, created_at
+        FROM transactions
+        WHERE customer_id = e_customer_id
+        ORDER BY created_at DESC
+        LIMIT 5
+    )
+    
+    -- Insert transaction record
+    INSERT INTO transactions (customer_id, booking_id, amount, payment_method, transaction_type)
+    VALUES (e_customer_id, e_booking_id, -e_amount, e_payment_method, 'refund');
+    
+    -- Update booking status to 'cancelled'
+    UPDATE bookings
+    SET status = 'cancelled'
+    WHERE booking_id = e_booking_id
+    AND status IN ('pending', 'confirmed');
+END$$
+DELIMITER ;
+
+DELIMITER $$
+CREATE TRIGGER trg_booking_payment_confirm
+AFTER INSERT ON transactions
+FOR EACH ROW
+BEGIN
+    IF NEW.transaction_type = 'booking_payment' THEN
+        UPDATE bookings
+        SET status = 'confirmed'
+        WHERE booking_id = NEW.booking_id
+        AND status = 'pending';
+    END IF;
+END$$
+DELIMITER ;

@@ -57,6 +57,7 @@ const employeeModel = {
             vm.brand, 
             vm.model, 
             v.license_plate,
+            v.vehicle_id,
             e.name AS employee_name
         FROM maintenance AS m
         JOIN vehicles AS v ON m.vehicle_id = v.vehicle_id

@@ -99,6 +99,9 @@ export function NavbarComp() {
                                 <Nav.Link as={Link} to="/admin/maintenance" className="mx-1">
                                     Maintenance
                                 </Nav.Link>
+                                <Nav.Link as={Link} to="/admin/transactions" className="mx-1">
+                                    Transactions
+                                </Nav.Link>
                             </>
                         )}
                         {isLoggedIn && role === "employee" && (

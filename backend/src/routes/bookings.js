@@ -150,7 +150,7 @@ router.get('/admin', auth, async (req, res) => {
     try {
         const query = `
             SELECT 
-                b.booking_id, b.start_date, b.end_date, b.status, b.created_at,
+                b.booking_id, b.start_date, b.end_date, b.status, b.created_at,b.feedback,
                 v.vehicle_id, v.model, v.license_plate, v.price_per_day,
                 c.customer_id, c.name AS customer_name, c.email AS customer_email, c.phone_number,
                 m.brand, m.vehicle_type
@@ -220,6 +220,25 @@ router.post('/rating', auth, async (req, res) => {
 }
 );
 
+router.post('/feedback', auth, async (req, res) => {
+    if (req.user.role !== 'customer') {
+        return res.status(403).send('Forbidden');
+    }
+    
+    const { booking_id, feedback } = req.body;
+    console.log(booking_id, feedback);
+    try {
+        const query = `UPDATE bookings SET feedback = ? WHERE booking_id = ?;`;
+        await db.query(query, [feedback, booking_id]);
+        
+        res.send('Feedback submitted successfully');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Internal Server Error');
+    }
+}
+);
+
 router.post('/cancel', auth, async (req, res) => {
     if (req.user.role !== 'customer') {
         return res.status(403).send('Forbidden');
@@ -234,7 +253,27 @@ router.post('/cancel', auth, async (req, res) => {
         if (affectedRows === 0) {
             return res.status(404).send('Booking not found');
         }
-        
+        console.log("Booking cancelled");
+        res.send('Booking cancelled successfully');
+    } catch (err) {
+        console.error(err);
+        res.status(500).send('Internal Server Error');
+    }
+}
+);
+
+router.post('/pending/cancel', auth, async (req, res) => {
+    if (req.user.role !== 'customer') {
+        return res.status(403).send('Forbidden');
+    }
+    
+    const bookingId = req.body.booking_id;
+    
+    try {
+        const affectedRows = await bookingModel.cancelBooking(bookingId);
+        if (affectedRows === 0) {
+            return res.status(404).send('Booking not found');
+        }console.log("pending Booking cancelled");
         res.send('Booking cancelled successfully');
     } catch (err) {
         console.error(err);

@@ -37,7 +37,7 @@ const maintModel = {
 
         const q2 = `UPDATE vehicles SET status = 'maintenance' WHERE vehicle_id = ?`;
         await pool.query(q2, [vehicle_id]);
-
+        
         return maintenance_id;
     },
     async deleteMaintenance(maintenance_id) {

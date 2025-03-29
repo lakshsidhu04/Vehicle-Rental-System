@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { Container, Table, Spinner, Alert, Card } from "react-bootstrap";
+import { useState, useEffect } from "react";
+import { Container, Table, Spinner, Alert, Card, Button } from "react-bootstrap";
 import { NavbarComp } from "../components/Navbar";
 
 export function EmployeeMaintenance() {
@@ -39,9 +39,30 @@ export function EmployeeMaintenance() {
         fetchEmployeeJobs();
     }, []);
 
+    const finishJob = async (job) => {
+        try {
+            const response = await fetch(`http://localhost:5050/maintenance/remove`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify({
+                    maintenance_id: job.maintenance_id,
+                    vehicle_id: job.vehicle_id,
+                }),
+            });
+            if (!response.ok) throw new Error("Failed to finish maintenance job.");
+            // Remove the finished job from the list
+            setJobs(jobs.filter(j => j.maintenance_id !== job.maintenance_id));
+        } catch (err) {
+            alert(err.message);
+        }
+    };
+
     return (
         <>
-            <NavbarComp /> {/* Include Navbar */}
+            <NavbarComp />
             <Container className="d-flex flex-column align-items-center" style={{ padding: "20px", backgroundColor: "#f8f9fa", minHeight: "100vh" }}>
                 <Card className="shadow-lg rounded-4 p-4 w-100" style={{ maxWidth: "900px" }}>
                     <h2 className="mb-4 text-center text-primary">My Maintenance Jobs</h2>
@@ -67,6 +88,7 @@ export function EmployeeMaintenance() {
                                     <th>Maintenance Date</th>
                                     <th>Cost</th>
                                     <th>Description</th>
+                                    <th>Action</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -79,6 +101,11 @@ export function EmployeeMaintenance() {
                                         <td>{new Date(job.maintenance_date).toLocaleDateString()}</td>
                                         <td>${job.cost}</td>
                                         <td>{job.description || "Not specified"}</td>
+                                        <td>
+                                            <Button variant="success" size="sm" onClick={() => finishJob(job)}>
+                                                Finish Job
+                                            </Button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>

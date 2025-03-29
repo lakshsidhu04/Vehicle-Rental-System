@@ -9,6 +9,7 @@ const maintRoutes = require('./routes/maintenance');
 const EarningRoutes = require('./routes/earnings');
 const signUpRoutes = require('./routes/signup');
 const fineRoutes = require('./routes/fines');
+const transactionRoutes = require('./routes/transaction');
 require('dotenv').config();
 require('./config/db');
 
@@ -26,5 +27,6 @@ app.use('/maintenance', maintRoutes);
 app.use('/earnings', EarningRoutes);
 app.use('/signup', signUpRoutes);
 app.use('/fines', fineRoutes);
+app.use('/transactions', transactionRoutes);
 const PORT = 5050;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

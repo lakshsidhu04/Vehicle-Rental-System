@@ -57,13 +57,17 @@ router.post('/', auth,async (req, res) => {
 );
 
 router.post('/remove', auth, async (req, res) => {
-    if(req.user.role !== 'admin'){
+    if(!(req.user.role === 'admin' || req.user.role === 'employee')){
         return res.status(401).send('Access Denied: Only Admins can remove vehicle maintenance');
     }
-    const { maintenance_id } = req.body;
+    const { maintenance_id,vehicle_id } = req.body;
     console.log(maintenance_id);
     try {
         const result = await Maintenance.deleteMaintenance(maintenance_id);
+        // update vehicle status to available
+        const query = `UPDATE vehicles SET status = 'avail' WHERE vehicle_id = ?`;
+        await pool.query(query, [vehicle_id]);
+
         res.json(result);
     } catch (error) {
         console.log(error);

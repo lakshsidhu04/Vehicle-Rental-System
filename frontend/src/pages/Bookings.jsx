@@ -76,6 +76,22 @@ export function Bookings() {
 
     const handleCancelPayment = async (booking) => {
         if (!window.confirm("Are you sure you want to cancel this booking?")) return;
+        if(booking.status==="pending"){
+            // just remove the booking
+            console.log('removing pending booking');
+            const response = await fetch(`http://localhost:5050/bookings/pending/cancel`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`,
+                },
+                body: JSON.stringify({
+                    booking_id: booking.booking_id,
+                }),
+            });
+            setBookings(bookings.filter(b => b.booking_id !== booking.booking_id));
+            return;
+        }
         try {
             const response = await fetch(`http://localhost:5050/bookings/cancel`, {
                 method: "POST",
@@ -98,8 +114,7 @@ export function Bookings() {
             console.error(err);
         }
     };
-
-    // Function to handle printing the bill using window.print()
+    
     const handlePrintBill = () => {
         window.print();
     };
@@ -146,9 +161,6 @@ export function Bookings() {
                                             <>
                                                 <Button variant="primary" className="mt-3 w-100" onClick={() => handlePaymentClick(booking)}>
                                                     Make Payment
-                                                </Button>
-                                                <Button variant="danger" className="mt-2 w-100" onClick={() => handleCancelPayment(booking)}>
-                                                    Cancel Booking
                                                 </Button>
                                             </>
                                         )}

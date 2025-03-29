@@ -50,12 +50,11 @@ export default function AdminBookings() {
                             <th>Phone</th>
                             <th>Vehicle</th>
                             <th>License Plate</th>
-                            <th>Type</th>
                             <th>Brand</th>
                             <th>Start Date</th>
                             <th>End Date</th>
                             <th>Status</th>
-                            <th>Price/Day ($)</th>
+                            <th>Feedback</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -81,7 +80,6 @@ export default function AdminBookings() {
                                     <td>{booking.phone_number}</td>
                                     <td>{booking.model}</td>
                                     <td>{booking.license_plate}</td>
-                                    <td>{booking.vehicle_type}</td>
                                     <td>{booking.brand}</td>
                                     <td>{new Date(booking.start_date).toLocaleDateString()}</td>
                                     <td>{new Date(booking.end_date).toLocaleDateString()}</td>
@@ -98,7 +96,7 @@ export default function AdminBookings() {
                                     >
                                         {booking.status.toUpperCase()}
                                     </td>
-                                    <td>${booking.price_per_day}</td>
+                                    <td>{booking.feedback}</td>
                                 </tr>
                             ))
                         )}
