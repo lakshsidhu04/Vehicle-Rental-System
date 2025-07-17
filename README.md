@@ -1,4 +1,4 @@
-# Vehicle Rental System
+# 🚗 Vehicle Rental System 
 
 A full-stack vehicle rental application built with React with Vite(frontend), Express.js (backend) and MySQL (database).
 
