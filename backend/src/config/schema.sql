@@ -636,3 +636,28 @@ BEGIN
     END IF;
 END$$
 DELIMITER ;
+
+
+
+BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+
+SELECT 1
+  FROM rentals
+ WHERE vehicle_id = :vehicleId
+   AND NOT (
+         :requestedEnd <= start_time
+     OR  :requestedStart >= end_time
+   )
+ FOR UPDATE;   
+
+INSERT INTO rentals
+  (user_id, vehicle_id, start_time, end_time, status)
+VALUES
+  (:userId, :vehicleId, :requestedStart, :requestedEnd, 'CONFIRMED');
+
+UPDATE vehicles
+   SET status = 'RENTED'
+ WHERE id = :vehicleId
+   AND status = 'AVAILABLE';
+
+COMMIT;
